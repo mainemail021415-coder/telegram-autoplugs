@@ -17,7 +17,7 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return {"status": "online", "message": "Peony SMM Auto-Delete Autoplug Backend is running!"}
+    return {"status": "online", "message": "Peony SMM Stable Auto-Delete Backend is running!"}
 
 active_clients = {}
 active_tasks = {}
@@ -58,7 +58,7 @@ class VerifyAndStartRequest(BaseModel):
     groups: list[str]
     interval_minutes: int
 
-# Background loop na may kasamang Auto-Delete pagkalipas ng 10 minuto
+# Background loop para sa 24 hours autoplug kasama ang 10-minute auto-delete
 async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash: str, message: str, groups: list[str], interval_minutes: int):
     active_tasks[phone] = True
     delay_seconds = max(interval_minutes, 1) * 60
@@ -78,13 +78,13 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                 
                 sent_msg = None
                 try:
-                    # 1. Ipadala ang mensahe at kunin ang message object para ma-delete mamaya
+                    # 1. Ipadala ang mensahe sa target group
                     sent_msg = await client.send_message(clean_group, message)
                     print(f"Successfully sent to {clean_group}")
                 except Exception as ex:
-                    print(f"Failed {clean_group}: {str(ex)}")
+                    print(f"Failed to send {clean_group}: {str(ex)}")
                 
-                # 2. Maghintay ng 10 minutes (600 seconds) bago burahin ang ipinadalang mensahe
+                # 2. Maghintay ng 10 minuto (600 seconds) para sa auto-delete
                 if sent_msg:
                     for _ in range(600):
                         if not active_tasks.get(phone, False):
@@ -93,15 +93,16 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                     
                     if active_tasks.get(phone, False):
                         try:
+                            # Direktang burahin ang mensahe gamit ang message ID at group entity
                             await client.delete_messages(clean_group, [sent_msg.id])
-                            print(f"Deleted old plug in {clean_group}")
+                            print(f"Successfully deleted message in {clean_group}")
                         except Exception as del_ex:
                             print(f"Failed to delete in {clean_group}: {str(del_ex)}")
 
-                # Maikling pahinga bago lumipat sa susunod na grupo
+                # Maikling pahinga bago lumipat sa kasunod na grupo
                 await asyncio.sleep(5)
 
-            # Maghintay ngayon ng itinakdang interval minutes ng user bago ang susunod na buong ikot
+            # 3. Maghintay ngayon ng itinakdang interval minutes ng user bago ang susunod na ikot
             for _ in range(delay_seconds):
                 if not active_tasks.get(phone, False):
                     break
@@ -132,7 +133,7 @@ async def verify_code(data: VerifyAndStartRequest, background_tasks: BackgroundT
         active_tasks[data.phone] = False
         await asyncio.sleep(1)
 
-        # Patakbuhin sa background ang loop na may auto-delete feature
+        # Patakbuhin sa background ang tuloy-tuloy na loop
         background_tasks.add_task(
             run_autoplug_loop,
             data.phone,
@@ -146,7 +147,11 @@ async def verify_code(data: VerifyAndStartRequest, background_tasks: BackgroundT
 
         return {
             "status": "success", 
-            "logs": [f"Nagsimula na ang 24H Autoplug loop na may 10-min auto-delete feature."], 
+            "logs": [
+                f"Nagsimula na ang 24H Autoplug loop.",
+                f"Interval set to {data.interval_minutes} minutes.",
+                "10-minute Auto-Delete feature is active."
+            ], 
             "message": "Matagumpay na naisagawa ang autoplug!"
         }
 
