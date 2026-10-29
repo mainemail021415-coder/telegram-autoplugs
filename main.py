@@ -14,7 +14,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 1. Idagdag ito para kapag binuksan sa browser, may sumalubong na mensahe sa halip na "Not Found"
 @app.get("/")
 async def root():
     return {"status": "online", "message": "Peony SMM Telegram Autoplug Backend is running successfully!"}
@@ -28,32 +27,22 @@ class AutoplugRequest(BaseModel):
 
 @app.post("/api/start-autoplug")
 async def start_autoplug(data: AutoplugRequest):
-    print(f"--- NATANGGAP ANG REQUEST MULA SA WEBSITE ---")
-    print(f"API ID: {data.api_id}")
-    print(f"Target Groups: {data.groups}")
-    print(f"Message: {data.message}")
-    
+    print(f"--- NAGSIMULA ANG AUTOPLUG --- Groups: {data.groups}")
     try:
-        # Patatakbuhin ang Telethon automation sa background
-        asyncio.create_task(run_real_telegram_plugs(data.api_id, data.api_hash, data.message, data.groups))
-        return {"status": "success", "message": "Autoplug successfully triggered on Render backend server!"}
-    except Exception as e:
-        print(f"Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-async def run_real_telegram_plugs(api_id, api_hash, message, groups):
-    client = TelegramClient(f'session_{api_id}', api_id, api_hash)
-    try:
-        print("Kumokonekta sa Telegram MTProto servers...")
+        # Patatakbuhin natin ang Telethon at ibabalik ang resulta
+        success_logs = []
+        client = TelegramClient(f'session_{data.api_id}', data.api_id, data.api_hash)
         await client.connect()
         
-        for group in groups:
-            print(f"Nagpapadala ng mensahe sa {group}...")
-            await client.send_message(group, message)
-            await asyncio.sleep(20) # Anti-flood delay
-            
-    except Exception as e:
-        print(f"Telegram Error: {e}")
-    finally:
+        for group in data.groups:
+            try:
+                await client.send_message(group.strip(), data.message)
+                success_logs.append(f"Successfully sent message to {group.strip()}")
+                await asyncio.sleep(15) # Safe anti-flood interval
+            except Exception as ex:
+                success_logs.append(f"Failed to send to {group.strip()}: {str(ex)}")
+                
         await client.disconnect()
-        print("Telegram client disconnected safely.")
+        return {"status": "success", "logs": success_logs, "message": "Kumpleto na ang pagpapadala sa mga target groups!"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
