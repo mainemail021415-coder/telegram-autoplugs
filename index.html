@@ -207,7 +207,7 @@
                             <span id="plugCount" class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-mono">Live</span>
                         </div>
                         <div class="space-y-2 max-h-48 overflow-y-auto pr-1" id="successfulPlugsList">
-                            <div class="text-xs text-emerald-400 italic py-2 text-center">Naipadala na ang request sa Render backend server...</div>
+                            <div class="text-xs text-emerald-400 italic py-2 text-center">Nagpapadala na sa mga target groups...</div>
                         </div>
                     </div>
 
@@ -260,13 +260,11 @@
                 return;
             }
 
-            // I-disable mula sa button ang multiple clicks habang nagpapadala
             const launchBtn = document.getElementById('launchBtn');
             launchBtn.disabled = true;
-            launchBtn.textContent = "Connecting to Render Backend...";
+            launchBtn.textContent = "Nagpapadala sa Telegram Groups...";
 
             try {
-                // Tunay na pagtawag sa Render Python backend API
                 const response = await fetch('https://telegram-autoplugs.onrender.com/api/start-autoplug', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -286,7 +284,23 @@
                     const days = parseInt(selectedPlan.getAttribute('data-days'));
                     startCountdown(days * 24 * 3600); 
 
-                    document.getElementById('logBox').innerHTML += `<div>[Backend Success] ${result.message}</div>`;
+                    const logBox = document.getElementById('logBox');
+                    logBox.innerHTML += `<div>[Backend Success] ${result.message}</div>`;
+                    
+                    if (result.logs && result.logs.length > 0) {
+                        const successfulPlugsList = document.getElementById('successfulPlugsList');
+                        successfulPlugsList.innerHTML = '';
+                        result.logs.forEach(log => {
+                            const timeNow = new Date().toLocaleTimeString();
+                            successfulPlugsList.innerHTML += `
+                                <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between text-xs">
+                                    <span class="text-emerald-400 flex items-center gap-2"><i class="fa-solid fa-circle-check"></i> ${log}</span>
+                                    <span class="text-slate-400 font-mono">${timeNow}</span>
+                                </div>
+                            `;
+                        });
+                    }
+
                     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
                 } else {
                     errorMsg.textContent = "May error sa server: " + (result.detail || "Subukang muli.");
@@ -306,7 +320,11 @@
             const timerDisplay = document.getElementById('countdownTimer');
             const logBox = document.getElementById('logBox');
 
-            const interval = setInterval(() => {
+            if (window.activeCountdownInterval) {
+                clearInterval(window.activeCountdownInterval);
+            }
+
+            window.activeCountdownInterval = setInterval(() => {
                 let hours = Math.floor(timer / 3600);
                 let minutes = Math.floor((timer % 3600) / 60);
                 let seconds = timer % 60;
@@ -317,9 +335,9 @@
                     String(seconds).padStart(2, '0');
 
                 if (--timer < 0) {
-                    clearInterval(interval);
+                    clearInterval(window.activeCountdownInterval);
                     timerDisplay.textContent = "EXPIRED (Auto-stopped)";
-                    logBox.innerHTML += `<div>[System] Subscription duration completed. Plugs stopped automatically.</div>`;
+                    logBox.innerHTML += `<div>[System] Kumpleto na ang oras ng iyong subscription. Naka-stop na ang system.</div>`;
                 }
             }, 1000);
         }
