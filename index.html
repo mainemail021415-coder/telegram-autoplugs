@@ -204,11 +204,15 @@
                         });
                     }
                 } else {
-                    errorMsg.textContent = "May error sa server: " + (result.detail || "Subukang muli.");
+                    let errorText = result.detail;
+                    if (typeof errorText === 'object') {
+                        errorText = JSON.stringify(errorText);
+                    }
+                    errorMsg.textContent = "May error sa server: " + (errorText || "Subukang muli.");
                     errorMsg.classList.remove('hidden');
                 }
             } catch (err) {
-                errorMsg.textContent = "Hindi ma-reach ang backend server sa Render.";
+                errorMsg.textContent = "May error sa koneksyon: " + err.message;
                 errorMsg.classList.remove('hidden');
             } finally {
                 launchBtn.disabled = false;
