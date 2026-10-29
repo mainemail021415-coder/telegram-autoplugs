@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import asyncio
+import random
+import string
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
@@ -17,9 +19,8 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return {"status": "online", "message": "Peony SMM Interactive Login Backend is running!"}
+    return {"status": "online", "message": "Peony SMM Randomized Autoplug Backend is running!"}
 
-# Temporary storage para sa active client sessions habang naghihintay ng OTP
 active_clients = {}
 
 class SendCodeRequest(BaseModel):
@@ -33,11 +34,9 @@ async def send_code(data: SendCodeRequest):
         client = TelegramClient(StringSession(), data.api_id, data.api_hash)
         await client.connect()
         
-        # Mag-request ng sign in code mula sa Telegram
         result = await client.send_code_request(data.phone)
         session_string = client.session.save()
         
-        # I-save muna pansamantala gamit ang phone bilang key
         active_clients[data.phone] = {
             "session": session_string,
             "api_id": data.api_id,
@@ -69,7 +68,6 @@ async def verify_code(data: VerifyAndStartRequest):
         client = TelegramClient(StringSession(client_data["session"]), data.api_id, data.api_hash)
         await client.connect()
         
-        # I-sign in ang user gamit ang code na inilagay nila
         await client.sign_in(data.phone, data.code, phone_code_hash=client_data["phone_code_hash"])
         
         success_logs = []
@@ -78,19 +76,25 @@ async def verify_code(data: VerifyAndStartRequest):
             if not clean_group:
                 continue
             try:
-                await client.send_message(clean_group, data.message)
-                success_logs.append(f"Successfully sent via account to {clean_group}")
-                await asyncio.sleep(15)  # 15 seconds anti-flood delay
+                # Gumagawa tayo ng random unique characters sa bawat send para hindi ma-detect bilang duplicate spam
+                random_suffix = ''.join(random.choices(string.ascii_letters + string.digits, k=5))
+                # Halimbawa: Idinadagdag ito nang nakatago o discreet sa dulo ng mensahe
+                final_message = f"{data.message}\n\n`[{random_suffix}]`"
+
+                await client.send_message(clean_group, final_message)
+                success_logs.append(f"Successfully sent via account to {clean_group} (ID: {random_suffix})")
+                
+                # 15 seconds anti-flood safety interval
+                await asyncio.sleep(15)
             except Exception as ex:
                 success_logs.append(f"Failed {clean_group}: {str(ex)}")
 
         await client.disconnect()
         
-        # Linisin ang temporary storage pagkatapos magamit
         if data.phone in active_clients:
             del active_clients[data.phone]
 
-        return {"status": "success", "logs": success_logs, "message": "Matagumpay na nakakonekta at naisagawa ang autoplug!"}
+        return {"status": "success", "logs": success_logs, "message": "Matagumpay na nakakonekta at naisagawa ang randomized autoplug!"}
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
