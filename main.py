@@ -2,8 +2,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import asyncio
-import random
-import string
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
@@ -19,9 +17,10 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return {"status": "online", "message": "Peony SMM Randomized Autoplug Backend is running!"}
+    return {"status": "online", "message": "Peony SMM Control Autoplug Backend is running!"}
 
 active_clients = {}
+active_tasks = {}
 
 class SendCodeRequest(BaseModel):
     api_id: int
@@ -70,22 +69,28 @@ async def verify_code(data: VerifyAndStartRequest):
         
         await client.sign_in(data.phone, data.code, phone_code_hash=client_data["phone_code_hash"])
         
+        # Markahan na active ang task para sa phone na ito
+        active_tasks[data.phone] = True
         success_logs = []
+
         for group in data.groups:
+            # Suriin kung pinindot ang stop button
+            if not active_tasks.get(data.phone, False):
+                success_logs.append("Autoplug stopped by user.")
+                break
+
             clean_group = group.strip()
             if not clean_group:
                 continue
             try:
-                # Gumagawa tayo ng random unique characters sa bawat send para hindi ma-detect bilang duplicate spam
-                random_suffix = ''.join(random.choices(string.ascii_letters + string.digits, k=5))
-                # Halimbawa: Idinadagdag ito nang nakatago o discreet sa dulo ng mensahe
-                final_message = f"{data.message}\n\n`[{random_suffix}]`"
-
-                await client.send_message(clean_group, final_message)
-                success_logs.append(f"Successfully sent via account to {clean_group} (ID: {random_suffix})")
+                await client.send_message(clean_group, data.message)
+                success_logs.append(f"Successfully sent to {clean_group}")
                 
-                # 15 seconds anti-flood safety interval
-                await asyncio.sleep(15)
+                # Hatiin natin sa maliliit na chunks ang 1-minute delay para mabilis ma-detect ang stop command
+                for _ in range(60):
+                    if not active_tasks.get(data.phone, False):
+                        break
+                    await asyncio.sleep(1)
             except Exception as ex:
                 success_logs.append(f"Failed {clean_group}: {str(ex)}")
 
@@ -93,8 +98,20 @@ async def verify_code(data: VerifyAndStartRequest):
         
         if data.phone in active_clients:
             del active_clients[data.phone]
+        if data.phone in active_tasks:
+            del active_tasks[data.phone]
 
-        return {"status": "success", "logs": success_logs, "message": "Matagumpay na nakakonekta at naisagawa ang randomized autoplug!"}
+        return {"status": "success", "logs": success_logs, "message": "Autoplug session completed or stopped."}
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+class StopRequest(BaseModel):
+    phone: str
+
+@app.post("/api/stop-autoplug")
+async def stop_autoplug(data: StopRequest):
+    if data.phone in active_tasks:
+        active_tasks[data.phone] = False
+        return {"status": "success", "message": "Matagumpay na pinatigil ang autoplug."}
+    return {"status": "not_found", "message": "Walang aktibong autoplug task para sa account na ito."}
