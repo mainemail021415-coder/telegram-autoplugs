@@ -17,7 +17,7 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return {"status": "online", "message": "Peony SMM Control Autoplug Backend is running!"}
+    return {"status": "online", "message": "Peony SMM Custom Interval Autoplug Backend is running!"}
 
 active_clients = {}
 active_tasks = {}
@@ -56,6 +56,7 @@ class VerifyAndStartRequest(BaseModel):
     code: str
     message: str
     groups: list[str]
+    interval_minutes: int  # Bagong parameter para sa custom interval ng user
 
 @app.post("/api/verify-code")
 async def verify_code(data: VerifyAndStartRequest):
@@ -69,12 +70,13 @@ async def verify_code(data: VerifyAndStartRequest):
         
         await client.sign_in(data.phone, data.code, phone_code_hash=client_data["phone_code_hash"])
         
-        # Markahan na active ang task para sa phone na ito
         active_tasks[data.phone] = True
         success_logs = []
 
+        # I-convert ang minutes patungong segundo (minimum 1 minute kung sakaling mali ang mailagay)
+        delay_seconds = max(data.interval_minutes, 1) * 60
+
         for group in data.groups:
-            # Suriin kung pinindot ang stop button
             if not active_tasks.get(data.phone, False):
                 success_logs.append("Autoplug stopped by user.")
                 break
@@ -84,10 +86,10 @@ async def verify_code(data: VerifyAndStartRequest):
                 continue
             try:
                 await client.send_message(clean_group, data.message)
-                success_logs.append(f"Successfully sent to {clean_group}")
+                success_logs.append(f"Successfully sent to {clean_group} (Interval: {data.interval_minutes} mins)")
                 
-                # Hatiin natin sa maliliit na chunks ang 1-minute delay para mabilis ma-detect ang stop command
-                for _ in range(60):
+                # Hatiin sa maliliit na chunks ang tulog para mabilis ma-detect ang Stop button
+                for _ in range(delay_seconds):
                     if not active_tasks.get(data.phone, False):
                         break
                     await asyncio.sleep(1)
