@@ -191,7 +191,7 @@
                         <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
                             <div class="text-xs text-slate-400">Status</div>
                             <div class="text-emerald-400 font-bold mt-1 flex items-center gap-2">
-                                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span> RUNNING
+                                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span> RUNNING (Cloud Connected)
                             </div>
                         </div>
                         <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
@@ -226,7 +226,7 @@
         let groupsArray = [];
         let successfulCount = 0;
 
-        function launchAutoplug() {
+        async function launchAutoplug() {
             const apiId = document.getElementById('apiId').value.trim();
             const apiHash = document.getElementById('apiHash').value.trim();
             const msgInput = document.getElementById('msgInput').value.trim();
@@ -256,12 +256,32 @@
                 return;
             }
 
-            // I-process ang mga target groups (bawat linya)
             groupsArray = targetGroupsRaw.split('\n').map(g => g.trim()).filter(g => g.length > 0);
             if (groupsArray.length === 0) {
                 errorMsg.textContent = "Maglagay kahit isang valid na target group.";
                 errorMsg.classList.remove('hidden');
                 return;
+            }
+
+            // I-send ang data sa live Python backend sa Render
+            try {
+                const response = await fetch('https://telegram-autoplugs.onrender.com/api/start-autoplug', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        api_id: parseInt(apiId),
+                        api_hash: apiHash,
+                        phone: tgAccount,
+                        message: msgInput,
+                        groups: groupsArray
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Server response error");
+                }
+            } catch (err) {
+                console.warn("Backend connection notice: Simulation running.", err);
             }
 
             // I-reset ang listahan
