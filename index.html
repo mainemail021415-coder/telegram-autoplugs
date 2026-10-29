@@ -32,7 +32,7 @@
             <h1 class="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-400 to-emerald-400 bg-clip-text text-transparent">
                 Telegram Interactive Autoplug Dashboard
             </h1>
-            <p class="text-slate-400 mt-2 text-sm">Secure login with automatic Telegram OTP verification & Stop control</p>
+            <p class="text-slate-400 mt-2 text-sm">Secure login with automatic Telegram OTP verification & Control buttons</p>
         </header>
 
         <div class="grid gap-8">
@@ -125,13 +125,18 @@
 
             <!-- Status Monitor -->
             <section id="statusSection" class="bg-cardBg border border-emerald-500/30 rounded-2xl p-6 shadow-xl hidden">
-                <div class="flex items-center justify-between mb-4">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4">
                     <h2 class="text-lg font-semibold flex items-center gap-2 text-emerald-400">
                         <i class="fa-solid fa-circle-dot animate-pulse"></i> Active Autoplug Monitor
                     </h2>
-                    <button onclick="stopAutoplug()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2">
-                        <i class="fa-solid fa-stop"></i> Stop Autoplug
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button onclick="restartAutoplug()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-3 py-2 rounded-xl text-xs transition-all flex items-center gap-1.5 shadow-md">
+                            <i class="fa-solid fa-rotate-right"></i> Restart Autoplug
+                        </button>
+                        <button onclick="stopAutoplug()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-3 py-2 rounded-xl text-xs transition-all flex items-center gap-1.5 shadow-md">
+                            <i class="fa-solid fa-stop"></i> Stop Autoplug
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="space-y-4">
@@ -164,6 +169,7 @@
     <script>
         const VALID_KEYS = ["021415", "021403", "200103", "003388"];
         let codeRequested = false;
+        let savedSessionData = null; // Ini-save natin para magamit sa restart
 
         async function handleAuthAction() {
             const apiId = document.getElementById('apiId').value.trim();
@@ -233,6 +239,14 @@
 
                 const groupsArray = targetGroupsRaw.split('\n').map(g => g.trim()).filter(g => g.length > 0);
 
+                // I-save ang credentials para sa restart feature
+                savedSessionData = {
+                    api_id: parseInt(apiId),
+                    api_hash: apiHash,
+                    phone: tgPhone,
+                    code: loginCode
+                };
+
                 launchBtn.disabled = true;
                 launchBtn.textContent = "Kumokonekta at nagpapadala na...";
 
@@ -241,10 +255,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            api_id: parseInt(apiId),
-                            api_hash: apiHash,
-                            phone: tgPhone,
-                            code: loginCode,
+                            ...savedSessionData,
                             message: msgInput,
                             groups: groupsArray
                         })
@@ -253,6 +264,7 @@
                     const result = await response.json();
                     if (response.ok) {
                         document.getElementById('statusSection').classList.remove('hidden');
+                        document.getElementById('monitorStatusText').innerHTML = '<span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span> LOGGED IN & ACTIVE';
                         startCountdown(24 * 3600);
 
                         if (result.logs && result.logs.length > 0) {
@@ -279,6 +291,59 @@
                     launchBtn.disabled = false;
                     launchBtn.textContent = "2. I-verify ang Code at Simulan ang Autoplug";
                 }
+            }
+        }
+
+        async function restartAutoplug() {
+            if (!savedSessionData) {
+                alert("Wala pang na-save na active session. Mag-login muna gamit ang code.");
+                return;
+            }
+
+            const msgInput = document.getElementById('msgInput').value.trim();
+            const targetGroupsRaw = document.getElementById('targetGroups').value.trim();
+
+            if (!msgInput || !targetGroupsRaw) {
+                alert("Ilagay ang bagong message o mga bagong target groups bago i-restart.");
+                return;
+            }
+
+            const groupsArray = targetGroupsRaw.split('\n').map(g => g.trim()).filter(g => g.length > 0);
+
+            document.getElementById('monitorStatusText').innerHTML = '<span class="h-2 w-2 rounded-full bg-purple-500 animate-ping"></span> RESTARTING & SENDING...';
+
+            try {
+                const response = await fetch('https://telegram-autoplugs.onrender.com/api/verify-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ...savedSessionData,
+                        message: msgInput,
+                        groups: groupsArray
+                    })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    document.getElementById('monitorStatusText').innerHTML = '<span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span> LOGGED IN & ACTIVE (RESTARTED)';
+                    if (result.logs && result.logs.length > 0) {
+                        const successfulPlugsList = document.getElementById('successfulPlugsList');
+                        result.logs.forEach(log => {
+                            const timeNow = new Date().toLocaleTimeString();
+                            successfulPlugsList.innerHTML += `
+                                <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between text-xs">
+                                    <span class="text-purple-400 flex items-center gap-2"><i class="fa-solid fa-rotate-right"></i> ${log}</span>
+                                    <span class="text-slate-400 font-mono">${timeNow}</span>
+                                </div>
+                            `;
+                        });
+                    }
+                    alert("Matagumpay na nai-restart ang autoplug gamit ang bagong mensahe o mga grupo!");
+                } else {
+                    alert("Hindi na-restart ang plug: " + (result.detail || "Error"));
+                }
+            } catch (err) {
+                alert("May error sa koneksyon habang nagre-restart.");
             }
         }
 
