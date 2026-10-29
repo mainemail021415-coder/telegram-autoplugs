@@ -94,9 +94,9 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                     log_text = f"Failed {clean_group}: {str(ex)} - {current_time}"
                     live_logs_storage[phone].append(log_text)
                 
-                # 10 minutes auto-delete (hati sa 10-second chunks para mabilis ma-stop)
+                # 10 minutes auto-delete na may kasamang log entry
                 if sent_msg:
-                    for _ in range(60):
+                    for _ in range(60): # 60 * 10 seconds = 600 seconds (10 mins)
                         if not active_tasks.get(phone, False):
                             break
                         await asyncio.sleep(10)
@@ -104,8 +104,10 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                     if active_tasks.get(phone, False):
                         try:
                             await client.delete_messages(clean_group, [sent_msg.id])
-                        except Exception:
-                            pass
+                            del_time = datetime.now().strftime("%I:%M:%S %p")
+                            live_logs_storage[phone].append(f"Auto-deleted message in {clean_group} - {del_time}")
+                        except Exception as del_ex:
+                            live_logs_storage[phone].append(f"Failed to delete in {clean_group}: {str(del_ex)}")
 
                 await asyncio.sleep(5)
 
