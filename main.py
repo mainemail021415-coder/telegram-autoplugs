@@ -14,6 +14,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 1. Idagdag ito para kapag binuksan sa browser, may sumalubong na mensahe sa halip na "Not Found"
+@app.get("/")
+async def root():
+    return {"status": "online", "message": "Peony SMM Telegram Autoplug Backend is running successfully!"}
+
 class AutoplugRequest(BaseModel):
     api_id: int
     api_hash: str
