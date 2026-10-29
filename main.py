@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import asyncio
+from datetime import datetime
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
@@ -17,10 +18,11 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return {"status": "online", "message": "Peony SMM Stable Auto-Delete Backend is running!"}
+    return {"status": "online", "message": "Peony SMM Live Logs Autoplug Backend is running!"}
 
 active_clients = {}
 active_tasks = {}
+live_logs_storage = {} # Dito natin ise-save ang mga successful/failed logs bawat phone
 
 class SendCodeRequest(BaseModel):
     api_id: int
@@ -58,16 +60,22 @@ class VerifyAndStartRequest(BaseModel):
     groups: list[str]
     interval_minutes: int
 
-# Background loop para sa 24 hours autoplug kasama ang 10-minute auto-delete
+# Background loop na nagtatala ng bawat successful plug sa bawat ikot
 async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash: str, message: str, groups: list[str], interval_minutes: int):
     active_tasks[phone] = True
     delay_seconds = max(interval_minutes, 1) * 60
+    
+    if phone not in live_logs_storage:
+        live_logs_storage[phone] = []
 
     try:
         client = TelegramClient(StringSession(session_str), api_id, api_hash)
         await client.connect()
 
+        cycle_count = 1
         while active_tasks.get(phone, False):
+            live_logs_storage[phone].append(f"--- Nagsimula na ang Ikot #{cycle_count} ---")
+            
             for group in groups:
                 if not active_tasks.get(phone, False):
                     break
@@ -78,13 +86,16 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                 
                 sent_msg = None
                 try:
-                    # 1. Ipadala ang mensahe sa target group
                     sent_msg = await client.send_message(clean_group, message)
-                    print(f"Successfully sent to {clean_group}")
+                    current_time = datetime.now().strftime("%I:%M:%S %p")
+                    log_text = f"Successfully sent to {clean_group} (Ikot #{cycle_count}) - {current_time}"
+                    live_logs_storage[phone].append(log_text)
                 except Exception as ex:
-                    print(f"Failed to send {clean_group}: {str(ex)}")
+                    current_time = datetime.now().strftime("%I:%M:%S %p")
+                    log_text = f"Failed {clean_group}: {str(ex)} - {current_time}"
+                    live_logs_storage[phone].append(log_text)
                 
-                # 2. Maghintay ng 10 minuto (600 seconds) para sa auto-delete
+                # 10 minutes auto-delete bawat mensahe
                 if sent_msg:
                     for _ in range(600):
                         if not active_tasks.get(phone, False):
@@ -93,24 +104,25 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                     
                     if active_tasks.get(phone, False):
                         try:
-                            # Direktang burahin ang mensahe gamit ang message ID at group entity
                             await client.delete_messages(clean_group, [sent_msg.id])
-                            print(f"Successfully deleted message in {clean_group}")
-                        except Exception as del_ex:
-                            print(f"Failed to delete in {clean_group}: {str(del_ex)}")
+                        except Exception:
+                            pass
 
-                # Maikling pahinga bago lumipat sa kasunod na grupo
                 await asyncio.sleep(5)
 
-            # 3. Maghintay ngayon ng itinakdang interval minutes ng user bago ang susunod na ikot
+            # Maghintay ng itinakdang interval minutes bago ang susunod na ikot
+            live_logs_storage[phone].append(f"Tapos na ang Ikot #{cycle_count}. Naghihintay ng {interval_minutes} mins para sa susunod na ikot...")
+            
             for _ in range(delay_seconds):
                 if not active_tasks.get(phone, False):
                     break
                 await asyncio.sleep(1)
 
+            cycle_count += 1
+
         await client.disconnect()
     except Exception as e:
-        print(f"Loop Error for {phone}: {str(e)}")
+        live_logs_storage[phone].append(f"Loop Error: {str(e)}")
     finally:
         if phone in active_tasks:
             del active_tasks[phone]
@@ -129,11 +141,11 @@ async def verify_code(data: VerifyAndStartRequest, background_tasks: BackgroundT
         session_str = client.session.save()
         await client.disconnect()
 
-        # Itigil ang lumang task kung meron man bago simulan ang bago
         active_tasks[data.phone] = False
         await asyncio.sleep(1)
+        
+        live_logs_storage[data.phone] = [f"Nagsimula na ang 24H Autoplug loop (Interval: {data.interval_minutes} mins)."]
 
-        # Patakbuhin sa background ang tuloy-tuloy na loop
         background_tasks.add_task(
             run_autoplug_loop,
             data.phone,
@@ -145,18 +157,18 @@ async def verify_code(data: VerifyAndStartRequest, background_tasks: BackgroundT
             data.interval_minutes
         )
 
-        return {
-            "status": "success", 
-            "logs": [
-                f"Nagsimula na ang 24H Autoplug loop.",
-                f"Interval set to {data.interval_minutes} minutes.",
-                "10-minute Auto-Delete feature is active."
-            ], 
-            "message": "Matagumpay na naisagawa ang autoplug!"
-        }
+        return {"status": "success", "message": "Nagsimula na ang autoplug!"}
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+class LogsRequest(BaseModel):
+    phone: str
+
+@app.post("/api/get-logs")
+async def get_logs(data: LogsRequest):
+    logs = live_logs_storage.get(data.phone, [])
+    return {"status": "success", "logs": logs}
 
 class StopRequest(BaseModel):
     phone: str
@@ -166,4 +178,4 @@ async def stop_autoplug(data: StopRequest):
     if data.phone in active_tasks:
         active_tasks[data.phone] = False
         return {"status": "success", "message": "Matagumpay na pinatigil ang autoplug."}
-    return {"status": "not_found", "message": "Walang aktibong autoplug task para sa account na ito."}
+    return {"status": "not_found", "message": "Walang aktibong task."}
