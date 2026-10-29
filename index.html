@@ -32,7 +32,7 @@
             <h1 class="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-400 to-emerald-400 bg-clip-text text-transparent">
                 Telegram Interactive Autoplug Dashboard
             </h1>
-            <p class="text-slate-400 mt-2 text-sm">Secure login with custom interval, 10-min auto-delete & loop controls</p>
+            <p class="text-slate-400 mt-2 text-sm">Secure login with live multi-cycle logs & auto-delete</p>
         </header>
 
         <div class="grid gap-8">
@@ -82,18 +82,17 @@
                 <h2 class="text-lg font-semibold mb-2 flex items-center gap-2 text-purple-300">
                     <i class="fa-solid fa-clock"></i> 4. Setting ng Interval Minutes
                 </h2>
-                <p class="text-xs text-slate-400 mb-4">Itakda kung gaano katagal ang pagitan bago ang susunod na buong ikot ng pag-plug.</p>
+                <p class="text-xs text-slate-400 mb-4">Itakda kung gaano katagal ang pagitan bago ang susunod na ikot ng pag-plug.</p>
                 
                 <div class="space-y-3">
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Interval Minutes</label>
                         <input type="number" id="intervalMinutes" value="35" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono">
                     </div>
-                    <!-- Safety Note -->
                     <div class="bg-yellow-500/10 border border-yellow-500/30 p-3 rounded-xl flex items-start gap-3">
                         <i class="fa-solid fa-triangle-exclamation text-yellow-400 text-base mt-0.5"></i>
                         <span class="text-xs text-yellow-200 leading-relaxed">
-                            <strong>Note:</strong> Minimum 35 minutes interval ang inirerekomenda upang maiwasan ang group ban o spam restriction ng Telegram. May kasama rin itong 10-minute auto-delete para laging ligtas!
+                            <strong>Note:</strong> Minimum 35 minutes ang inirerekomenda para maiwasan ang ban. May 10-min auto-delete din bawat mensahe.
                         </span>
                     </div>
                 </div>
@@ -177,7 +176,7 @@
 
                     <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
                         <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Live Sending Results</span>
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Live Sending Results (Real-time)</span>
                         </div>
                         <div class="space-y-2 max-h-48 overflow-y-auto pr-1" id="successfulPlugsList">
                             <div class="text-xs text-emerald-400 italic py-2 text-center">Nagsisimula nang magpadala ang iyong account...</div>
@@ -192,6 +191,7 @@
         const VALID_KEYS = ["021415", "021403", "200103", "003388"];
         let codeRequested = false;
         let savedSessionData = null;
+        let logsInterval = null;
 
         async function handleAuthAction() {
             const apiId = document.getElementById('apiId').value.trim();
@@ -291,20 +291,7 @@
                         document.getElementById('statusSection').classList.remove('hidden');
                         document.getElementById('monitorStatusText').innerHTML = '<span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span> LOGGED IN & ACTIVE';
                         startCountdown(24 * 3600);
-
-                        if (result.logs && result.logs.length > 0) {
-                            const successfulPlugsList = document.getElementById('successfulPlugsList');
-                            successfulPlugsList.innerHTML = '';
-                            result.logs.forEach(log => {
-                                const timeNow = new Date().toLocaleTimeString();
-                                successfulPlugsList.innerHTML += `
-                                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between text-xs">
-                                        <span class="text-emerald-400 flex items-center gap-2"><i class="fa-solid fa-circle-check"></i> ${log}</span>
-                                        <span class="text-slate-400 font-mono">${timeNow}</span>
-                                    </div>
-                                `;
-                            });
-                        }
+                        startLiveLogsPolling(tgPhone);
                     } else {
                         let errText = result.detail;
                         if (typeof errText === 'object') errText = JSON.stringify(errText);
@@ -337,7 +324,6 @@
             }
 
             const groupsArray = targetGroupsRaw.split('\n').map(g => g.trim()).filter(g => g.length > 0);
-
             document.getElementById('monitorStatusText').innerHTML = '<span class="h-2 w-2 rounded-full bg-purple-500 animate-ping"></span> RESTARTING & SENDING...';
 
             try {
@@ -355,23 +341,9 @@
                 const result = await response.json();
                 if (response.ok) {
                     document.getElementById('monitorStatusText').innerHTML = '<span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span> LOGGED IN & ACTIVE (RESTARTED)';
-                    if (result.logs && result.logs.length > 0) {
-                        const successfulPlugsList = document.getElementById('successfulPlugsList');
-                        result.logs.forEach(log => {
-                            const timeNow = new Date().toLocaleTimeString();
-                            successfulPlugsList.innerHTML += `
-                                <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between text-xs">
-                                    <span class="text-purple-400 flex items-center gap-2"><i class="fa-solid fa-rotate-right"></i> ${log}</span>
-                                    <span class="text-slate-400 font-mono">${timeNow}</span>
-                                </div>
-                            `;
-                        });
-                    }
                     alert("Matagumpay na nai-restart ang autoplug!");
                 } else {
-                    let errText = result.detail;
-                    if (typeof errText === 'object') errText = JSON.stringify(errText);
-                    alert("Hindi na-restart ang plug: " + (errText || "Error"));
+                    alert("Hindi na-restart ang plug.");
                 }
             } catch (err) {
                 alert("May error sa koneksyon habang nagre-restart.");
@@ -391,13 +363,44 @@
                 const result = await response.json();
                 if (response.ok) {
                     document.getElementById('monitorStatusText').innerHTML = '<span class="h-2 w-2 rounded-full bg-red-500"></span> STOPPED BY USER';
+                    if (logsInterval) clearInterval(logsInterval);
                     alert("Matagumpay na nai-stop ang autoplug!");
                 } else {
-                    alert("Hindi mapatigil ang plug: " + result.message);
+                    alert("Hindi mapatigil ang plug.");
                 }
             } catch (err) {
                 alert("May error sa koneksyon sa pag-stop.");
             }
+        }
+
+        // Kukuha ng bagong logs sa server kada 5 segundo para sa real-time display
+        function startLiveLogsPolling(phone) {
+            if (logsInterval) clearInterval(logsInterval);
+
+            logsInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('https://telegram-autoplugs.onrender.com/api/get-logs', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone: phone })
+                    });
+                    const result = await response.json();
+                    if (response.ok && result.logs) {
+                        const successfulPlugsList = document.getElementById('successfulPlugsList');
+                        successfulPlugsList.innerHTML = '';
+                        result.logs.forEach(log => {
+                            successfulPlugsList.innerHTML += `
+                                <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between text-xs">
+                                    <span class="text-emerald-400 flex items-center gap-2"><i class="fa-solid fa-circle-check"></i> ${log}</span>
+                                </div>
+                            `;
+                        });
+                        successfulPlugsList.scrollTop = successfulPlugsList.scrollHeight;
+                    }
+                } catch (err) {
+                    console.error("Error fetching logs:", err);
+                }
+            }, 5000); // Bawat 5 segundo i-a-update ang logs sa screen
         }
 
         function startCountdown(durationInSeconds) {
