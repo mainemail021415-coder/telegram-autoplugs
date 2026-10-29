@@ -32,7 +32,7 @@
             <h1 class="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-400 to-emerald-400 bg-clip-text text-transparent">
                 Telegram Interactive Autoplug Dashboard
             </h1>
-            <p class="text-slate-400 mt-2 text-sm">Secure login with custom interval settings & stop/restart controls</p>
+            <p class="text-slate-400 mt-2 text-sm">Secure login with custom interval, 10-min auto-delete & loop controls</p>
         </header>
 
         <div class="grid gap-8">
@@ -82,7 +82,7 @@
                 <h2 class="text-lg font-semibold mb-2 flex items-center gap-2 text-purple-300">
                     <i class="fa-solid fa-clock"></i> 4. Setting ng Interval Minutes
                 </h2>
-                <p class="text-xs text-slate-400 mb-4">Itakda kung gaano katagal ang pagitan bago ipadala sa susunod na grupo.</p>
+                <p class="text-xs text-slate-400 mb-4">Itakda kung gaano katagal ang pagitan bago ang susunod na buong ikot ng pag-plug.</p>
                 
                 <div class="space-y-3">
                     <div>
@@ -93,7 +93,7 @@
                     <div class="bg-yellow-500/10 border border-yellow-500/30 p-3 rounded-xl flex items-start gap-3">
                         <i class="fa-solid fa-triangle-exclamation text-yellow-400 text-base mt-0.5"></i>
                         <span class="text-xs text-yellow-200 leading-relaxed">
-                            <strong>Note:</strong> Minimum 35 minutes interval ang inirerekomenda upang maiwasan ang group ban o spam restriction ng Telegram.
+                            <strong>Note:</strong> Minimum 35 minutes interval ang inirerekomenda upang maiwasan ang group ban o spam restriction ng Telegram. May kasama rin itong 10-minute auto-delete para laging ligtas!
                         </span>
                     </div>
                 </div>
@@ -191,7 +191,7 @@
     <script>
         const VALID_KEYS = ["021415", "021403", "200103", "003388"];
         let codeRequested = false;
-        let savedSessionData = null; // Ini-save natin para magamit sa restart
+        let savedSessionData = null;
 
         async function handleAuthAction() {
             const apiId = document.getElementById('apiId').value.trim();
@@ -264,7 +264,6 @@
 
                 const groupsArray = targetGroupsRaw.split('\n').map(g => g.trim()).filter(g => g.length > 0);
 
-                // I-save ang credentials para sa restart feature
                 savedSessionData = {
                     api_id: parseInt(apiId),
                     api_hash: apiHash,
@@ -368,7 +367,7 @@
                             `;
                         });
                     }
-                    alert("Matagumpay na nai-restart ang autoplug gamit ang bagong interval at mensahe!");
+                    alert("Matagumpay na nai-restart ang autoplug!");
                 } else {
                     let errText = result.detail;
                     if (typeof errText === 'object') errText = JSON.stringify(errText);
