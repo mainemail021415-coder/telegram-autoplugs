@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peony SMM - Telegram Autoplug Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        cardBg: '#1e293b',
+                        accentGreen: '#10b981',
+                        accentPurple: '#8b5cf6'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-darkBg text-slate-100 min-h-screen font-sans antialiased">
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <div class="inline-flex items-center justify-center p-3 bg-purple-500/10 rounded-2xl mb-4 border border-purple-500/20">
+                <i class="fa-solid fa-robot text-3xl text-accentPurple"></i>
+            </div>
+            <h1 class="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-400 to-emerald-400 bg-clip-text text-transparent">
+                Telegram Autoplug Client Dashboard
+            </h1>
+            <p class="text-slate-400 mt-2 text-sm">Secure automated messaging tool with anti-flood protection</p>
+        </header>
+
+        <div class="grid gap-8">
+            <!-- Step 1: Configuration Form -->
+            <section class="bg-cardBg border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-purple-300">
+                    <i class="fa-solid fa-sliders"></i> 1. Autoplug Configuration
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Telegram Message or Message Link</label>
+                        <input type="text" id="msgInput" placeholder="https://t.me/c/... or your custom promotional text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Your Telegram Account / Username</label>
+                        <input type="text" id="tgAccount" placeholder="@yourusername" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Target Telegram Groups (Isa bawat linya)</label>
+                        <textarea id="targetGroups" rows="4" placeholder="@group1&#10;@group2&#10;@group3" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors"></textarea>
+                    </div>
+
+                    <!-- Safety Intervals Box -->
+                    <div class="bg-slate-900/80 border border-emerald-500/30 rounded-xl p-4 text-xs font-mono text-emerald-400 space-y-1">
+                        <div class="font-bold text-slate-200 mb-2"># --- INTERVALS / TIME DELAYS (Anti-Flood Protection) ---</div>
+                        <div>MESSAGE_DELAY_MIN = 15 # Minimum 15 secs pagitan</div>
+                        <div>MESSAGE_DELAY_MAX = 25 # Maximum 25 secs pagitan</div>
+                        <div>COFFEE_BREAK_MIN_MINS = 50 # Minimum 50 mins break</div>
+                        <div>COFFEE_BREAK_MAX_MINS = 55 # Maximum 55 mins break</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 2: Pricing Selector -->
+            <section class="bg-cardBg border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-purple-300">
+                    <i class="fa-solid fa-tag"></i> 2. Pumili ng Subscription Plan
+                </h2>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="pricingGrid">
+                    <label class="plan-card border border-slate-700 bg-slate-900/50 p-4 rounded-xl cursor-pointer hover:border-purple-500 transition-all flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-semibold text-slate-200">1 Day (24 Hours)</span>
+                            <input type="radio" name="plan" value="50" data-days="1" class="accent-purple-500">
+                        </div>
+                        <div class="text-xl font-bold text-emerald-400">₱50</div>
+                        <div class="text-xs text-slate-400 mt-1">Auto-stops after 24 hours</div>
+                    </label>
+
+                    <label class="plan-card border border-slate-700 bg-slate-900/50 p-4 rounded-xl cursor-pointer hover:border-purple-500 transition-all flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-semibold text-slate-200">2 Days</span>
+                            <input type="radio" name="plan" value="75" data-days="2" class="accent-purple-500">
+                        </div>
+                        <div class="text-xl font-bold text-emerald-400">₱75</div>
+                    </label>
+
+                    <label class="plan-card border border-slate-700 bg-slate-900/50 p-4 rounded-xl cursor-pointer hover:border-purple-500 transition-all flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-semibold text-slate-200">3 Days</span>
+                            <input type="radio" name="plan" value="125" data-days="3" class="accent-purple-500">
+                        </div>
+                        <div class="text-xl font-bold text-emerald-400">₱125</div>
+                    </label>
+
+                    <label class="plan-card border border-slate-700 bg-slate-900/50 p-4 rounded-xl cursor-pointer hover:border-purple-500 transition-all flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-semibold text-slate-200">4 Days</span>
+                            <input type="radio" name="plan" value="145" data-days="4" class="accent-purple-500">
+                        </div>
+                        <div class="text-xl font-bold text-emerald-400">₱145</div>
+                    </label>
+
+                    <label class="plan-card border border-slate-700 bg-slate-900/50 p-4 rounded-xl cursor-pointer hover:border-purple-500 transition-all flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-semibold text-slate-200">5 Days</span>
+                            <input type="radio" name="plan" value="165" data-days="5" class="accent-purple-500">
+                        </div>
+                        <div class="text-xl font-bold text-emerald-400">₱165</div>
+                    </label>
+
+                    <label class="plan-card border border-slate-700 bg-slate-900/50 p-4 rounded-xl cursor-pointer hover:border-purple-500 transition-all flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-semibold text-slate-200">6 Days</span>
+                            <input type="radio" name="plan" value="185" data-days="6" class="accent-purple-500">
+                        </div>
+                        <div class="text-xl font-bold text-emerald-400">₱185</div>
+                    </label>
+
+                    <label class="plan-card border border-slate-700 bg-slate-900/50 p-4 rounded-xl cursor-pointer hover:border-purple-500 transition-all flex flex-col justify-between sm:col-span-2 lg:col-span-1">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-semibold text-slate-200">7 Days</span>
+                            <input type="radio" name="plan" value="199" data-days="7" class="accent-purple-500">
+                        </div>
+                        <div class="text-xl font-bold text-emerald-400">₱199</div>
+                    </label>
+                </div>
+            </section>
+
+            <!-- Step 3: Payment & Telegram Contact -->
+            <section class="bg-cardBg border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-purple-300">
+                    <i class="fa-solid fa-wallet"></i> 3. Payment & Confirmation
+                </h2>
+                
+                <div class="bg-slate-900 p-5 rounded-xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+                    <div>
+                        <div class="text-xs text-slate-400 uppercase tracking-wider">GCash Account Details</div>
+                        <div class="text-2xl font-bold text-slate-100 mt-1">09678537559</div>
+                        <div class="text-sm font-semibold text-purple-400">J.Y.D</div>
+                    </div>
+                    <a href="https://t.me/peony03" target="_blank" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl transition-colors text-sm">
+                        <i class="fa-brands fa-telegram text-lg"></i> I-contact si @peony03
+                    </a>
+                </div>
+
+                <p class="text-xs text-slate-400 leading-relaxed mb-6">
+                    ⚠️ <strong class="text-slate-200">Tandaan:</strong> Bago makapagsalang ng plug, i-contact muna si <span class="text-purple-400 font-semibold">@peony03</span> sa Telegram para sa confirmation ng payment. Pagkatapos ma-confirm, bibigyan ka ng key code para mai-input sa ibaba.
+                </p>
+
+                <!-- Key Code & Launch -->
+                <div class="space-y-4 pt-4 border-t border-slate-800">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Ilagay ang Key Code na ibinigay ni @peony03</label>
+                        <input type="text" id="keyCode" placeholder="Ilagay ang Key Code dito..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 font-mono tracking-wider">
+                    </div>
+
+                    <button id="launchBtn" onclick="launchAutoplug()" class="w-full bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-900/20 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rocket"></i> Launch Autoplug
+                    </button>
+                    <div id="errorMsg" class="text-red-400 text-xs text-center hidden"></div>
+                </div>
+            </section>
+
+            <!-- Status Monitor (Hidden until launched) -->
+            <section id="statusSection" class="bg-cardBg border border-emerald-500/30 rounded-2xl p-6 shadow-xl hidden">
+                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-emerald-400">
+                    <i class="fa-solid fa-circle-dot animate-pulse"></i> Active Autoplug Monitor
+                </h2>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                            <div class="text-xs text-slate-400">Status</div>
+                            <div class="text-emerald-400 font-bold mt-1 flex items-center gap-2">
+                                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span> RUNNING
+                            </div>
+                        </div>
+                        <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                            <div class="text-xs text-slate-400">Time Remaining</div>
+                            <div id="countdownTimer" class="text-xl font-bold text-slate-100 font-mono mt-1">--:--:--</div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 space-y-2 max-h-40 overflow-y-auto" id="logBox">
+                        <div>[System] Autoplug initialized successfully.</div>
+                        <div>[System] Delays loaded: 15s-25s message gap, 50-55m coffee break.</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        const VALID_KEYS = ["021415", "021403", "200103", "003388"];
+
+        function launchAutoplug() {
+            const msgInput = document.getElementById('msgInput').value.trim();
+            const tgAccount = document.getElementById('tgAccount').value.trim();
+            const targetGroups = document.getElementById('targetGroups').value.trim();
+            const keyCode = document.getElementById('keyCode').value.trim();
+            const selectedPlan = document.querySelector('input[name="plan"]:checked');
+            const errorMsg = document.getElementById('errorMsg');
+
+            errorMsg.classList.add('hidden');
+
+            if (!msgInput || !tgAccount || !targetGroups) {
+                errorMsg.textContent = "Punan ang lahat ng fields sa Autoplug Configuration.";
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            if (!selectedPlan) {
+                errorMsg.textContent = "Pumili muna ng subscription plan.";
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            if (!VALID_KEYS.includes(keyCode)) {
+                errorMsg.textContent = "Invalid Key Code. Mangyaring kontakin si @peony03 para sa tamang key code.";
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            // Success: Show monitor and start countdown based on days
+            const days = parseInt(selectedPlan.getAttribute('data-days'));
+            startCountdown(days * 24 * 3600); // convert days to seconds
+
+            document.getElementById('statusSection').classList.remove('hidden');
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        function startCountdown(durationInSeconds) {
+            let timer = durationInSeconds;
+            const timerDisplay = document.getElementById('countdownTimer');
+            const logBox = document.getElementById('logBox');
+
+            const interval = setInterval(() => {
+                let hours = Math.floor(timer / 3600);
+                let minutes = Math.floor((timer % 3600) / 60);
+                let seconds = timer % 60;
+
+                timerDisplay.textContent = 
+                    String(hours).padStart(2, '0') + ":" +
+                    String(minutes).padStart(2, '0') + ":" +
+                    String(seconds).padStart(2, '0');
+
+                if (--timer < 0) {
+                    clearInterval(interval);
+                    timerDisplay.textContent = "EXPIRED (Auto-stopped)";
+                    logBox.innerHTML += `<div>[System] Subscription duration completed. Plugs stopped automatically.</div>`;
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
