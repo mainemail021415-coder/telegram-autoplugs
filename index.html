@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Peony SMM - Telegram User Autoplug Dashboard</title>
+    <title>Peony SMM - Telegram Interactive Autoplug</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -27,16 +27,16 @@
         <!-- Header -->
         <header class="text-center mb-10">
             <div class="inline-flex items-center justify-center p-3 bg-purple-500/10 rounded-2xl mb-4 border border-purple-500/20">
-                <i class="fa-solid fa-user-gear text-3xl text-accentPurple"></i>
+                <i class="fa-solid fa-user-shield text-3xl text-accentPurple"></i>
             </div>
             <h1 class="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-400 to-emerald-400 bg-clip-text text-transparent">
-                Telegram User Autoplug Dashboard
+                Telegram Interactive Autoplug Dashboard
             </h1>
-            <p class="text-slate-400 mt-2 text-sm">Automated messaging via your personal Telegram account</p>
+            <p class="text-slate-400 mt-2 text-sm">Secure login with automatic Telegram OTP verification</p>
         </header>
 
         <div class="grid gap-8">
-            <!-- Step 1: Configuration Form -->
+            <!-- Configuration Form -->
             <section class="bg-cardBg border border-slate-800 rounded-2xl p-6 shadow-xl">
                 <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-purple-300">
                     <i class="fa-solid fa-sliders"></i> 1. Telegram Account & API Credentials
@@ -46,48 +46,54 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-1">Telegram API ID</label>
-                            <input type="text" id="apiId" placeholder="e.g. 12345678" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors font-mono">
+                            <input type="text" id="apiId" placeholder="e.g. 12345678" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 font-mono">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-1">Telegram API Hash</label>
-                            <input type="password" id="apiHash" placeholder="e.g. a1b2c3d4e5f6..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors font-mono">
+                            <input type="password" id="apiHash" placeholder="e.g. a1b2c3d4e5f6..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 font-mono">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-1">Your Telegram Phone Number / Username</label>
-                        <input type="text" id="tgAccount" placeholder="+639XXXXXXXXX o @username" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors">
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Phone Number (May kasamang country code)</label>
+                        <input type="text" id="tgPhone" placeholder="+639XXXXXXXXX" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 font-mono">
+                    </div>
+
+                    <!-- OTP Code Input (Hidden muna hangga't hindi pa nag-request ng code) -->
+                    <div id="otpSection" class="hidden bg-purple-950/40 border border-purple-500/30 p-4 rounded-xl space-y-3">
+                        <label class="block text-sm font-medium text-purple-300">Ilagay ang Login Code na natanggap sa Telegram:</label>
+                        <input type="text" id="loginCode" placeholder="e.g. 12345" class="w-full bg-slate-900 border border-purple-500 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono text-center text-lg tracking-widest">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Telegram Promotional Message</label>
-                        <textarea id="msgInput" rows="3" placeholder="Ilagay ang iyong promotional text dito..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors"></textarea>
+                        <textarea id="msgInput" rows="3" placeholder="Ilagay ang iyong promotional text dito..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500"></textarea>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Target Telegram Groups (Isa bawat linya, gamitin ang @username)</label>
-                        <textarea id="targetGroups" rows="4" placeholder="@group1&#10;@group2&#10;@group3" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors"></textarea>
+                        <textarea id="targetGroups" rows="4" placeholder="@group1&#10;@group2" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500"></textarea>
                     </div>
                 </div>
             </section>
 
-            <!-- Step 2: Pricing Selector -->
+            <!-- Subscription Plan -->
             <section class="bg-cardBg border border-slate-800 rounded-2xl p-6 shadow-xl">
                 <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-purple-300">
                     <i class="fa-solid fa-tag"></i> 2. Pumili ng Subscription Plan
                 </h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="pricingGrid">
-                    <label class="plan-card border border-slate-700 bg-slate-900/50 p-4 rounded-xl cursor-pointer hover:border-purple-500 transition-all flex flex-col justify-between">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <label class="plan-card border border-slate-700 bg-slate-900/50 p-4 rounded-xl cursor-pointer hover:border-purple-500 flex flex-col justify-between">
                         <div class="flex items-center justify-between mb-2">
                             <span class="font-semibold text-slate-200">1 Day (24 Hours)</span>
-                            <input type="radio" name="plan" value="50" data-days="1" class="accent-purple-500" checked>
+                            <input type="radio" name="plan" value="50" class="accent-purple-500" checked>
                         </div>
                         <div class="text-xl font-bold text-emerald-400">₱50</div>
                     </label>
                 </div>
             </section>
 
-            <!-- Step 3: Payment & Launch -->
+            <!-- Payment & Launch -->
             <section class="bg-cardBg border border-slate-800 rounded-2xl p-6 shadow-xl">
                 <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-purple-300">
                     <i class="fa-solid fa-wallet"></i> 3. Payment & Key Code
@@ -99,7 +105,7 @@
                         <div class="text-2xl font-bold text-slate-100 mt-1">09678537559</div>
                         <div class="text-sm font-semibold text-purple-400">J.Y.D</div>
                     </div>
-                    <a href="https://t.me/peony03" target="_blank" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl transition-colors text-sm">
+                    <a href="https://t.me/peony03" target="_blank" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl text-sm">
                         <i class="fa-brands fa-telegram text-lg"></i> I-contact si @peony03
                     </a>
                 </div>
@@ -107,11 +113,11 @@
                 <div class="space-y-4 pt-4 border-t border-slate-800">
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Ilagay ang Key Code na ibinigay ni @peony03</label>
-                        <input type="text" id="keyCode" placeholder="Ilagay ang Key Code dito..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 font-mono tracking-wider">
+                        <input type="text" id="keyCode" placeholder="Ilagay ang Key Code dito..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono tracking-wider">
                     </div>
 
-                    <button id="launchBtn" onclick="launchAutoplug()" class="w-full bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-900/20 transition-all flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-rocket"></i> Launch User Autoplug
+                    <button id="launchBtn" onclick="handleAuthAction()" class="w-full bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-900/20 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i> 1. Humingi ng Login Code sa Telegram
                     </button>
                     <div id="errorMsg" class="text-red-400 text-xs text-center hidden"></div>
                 </div>
@@ -127,7 +133,7 @@
                         <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
                             <div class="text-xs text-slate-400">Status</div>
                             <div class="text-emerald-400 font-bold mt-1 flex items-center gap-2">
-                                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span> USER ACCOUNT ACTIVE
+                                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span> LOGGED IN & ACTIVE
                             </div>
                         </div>
                         <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
@@ -151,20 +157,20 @@
 
     <script>
         const VALID_KEYS = ["021415", "021403", "200103", "003388"];
+        let codeRequested = false;
 
-        async function launchAutoplug() {
+        async function handleAuthAction() {
             const apiId = document.getElementById('apiId').value.trim();
             const apiHash = document.getElementById('apiHash').value.trim();
-            const tgAccount = document.getElementById('tgAccount').value.trim();
-            const msgInput = document.getElementById('msgInput').value.trim();
-            const targetGroupsRaw = document.getElementById('targetGroups').value.trim();
+            const tgPhone = document.getElementById('tgPhone').value.trim();
             const keyCode = document.getElementById('keyCode').value.trim();
             const errorMsg = document.getElementById('errorMsg');
+            const launchBtn = document.getElementById('launchBtn');
 
             errorMsg.classList.add('hidden');
 
-            if (!apiId || !apiHash || !tgAccount || !msgInput || !targetGroupsRaw) {
-                errorMsg.textContent = "Punan ang lahat ng fields (API ID, Hash, Account, Message, at Groups).";
+            if (!apiId || !apiHash || !tgPhone) {
+                errorMsg.textContent = "Punan ang API ID, API Hash, at Phone Number.";
                 errorMsg.classList.remove('hidden');
                 return;
             }
@@ -175,86 +181,114 @@
                 return;
             }
 
-            const groupsArray = targetGroupsRaw.split('\n').map(g => g.trim()).filter(g => g.length > 0);
-            if (groupsArray.length === 0) {
-                errorMsg.textContent = "Maglagay kahit isang valid na target group.";
-                errorMsg.classList.remove('hidden');
-                return;
-            }
+            if (!codeRequested) {
+                // HAKBANG 1: Humingi ng code mula sa Telegram
+                launchBtn.disabled = true;
+                launchBtn.textContent = "Nagpapadala ng code sa Telegram...";
 
-            const launchBtn = document.getElementById('launchBtn');
-            launchBtn.disabled = true;
-            launchBtn.textContent = "Kumokonekta sa Account...";
-
-            try {
-                const response = await fetch('https://telegram-autoplugs.onrender.com/api/start-autoplug', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        api_id: parseInt(apiId),
-                        api_hash: apiHash,
-                        phone: tgAccount,
-                        message: msgInput,
-                        groups: groupsArray
-                    })
-                });
-
-                const textResult = await response.text();
-                let result;
                 try {
-                    result = JSON.parse(textResult);
-                } catch(e) {
-                    result = { detail: textResult };
-                }
+                    const response = await fetch('https://telegram-autoplugs.onrender.com/api/send-code', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            api_id: parseInt(apiId),
+                            api_hash: apiHash,
+                            phone: tgPhone
+                        })
+                    });
 
-                if (response.ok) {
-                    document.getElementById('statusSection').classList.remove('hidden');
-                    startCountdown(24 * 3600); 
-
-                    if (result.logs && result.logs.length > 0) {
-                        const successfulPlugsList = document.getElementById('successfulPlugsList');
-                        successfulPlugsList.innerHTML = '';
-                        result.logs.forEach(log => {
-                            const timeNow = new Date().toLocaleTimeString();
-                            successfulPlugsList.innerHTML += `
-                                <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between text-xs">
-                                    <span class="text-emerald-400 flex items-center gap-2"><i class="fa-solid fa-circle-check"></i> ${log}</span>
-                                    <span class="text-slate-400 font-mono">${timeNow}</span>
-                                </div>
-                            `;
-                        });
+                    const result = await response.json();
+                    if (response.ok) {
+                        document.getElementById('otpSection').classList.remove('hidden');
+                        codeRequested = true;
+                        launchBtn.textContent = "2. I-verify ang Code at Simulan ang Autoplug";
+                        alert("Naipadala na ang code sa iyong Telegram app! Ilagay ito sa kahon.");
+                    } else {
+                        errorMsg.textContent = "Error: " + (result.detail || "Hindi maipadala ang code.");
+                        errorMsg.classList.remove('hidden');
+                        launchBtn.textContent = "1. Humingi ng Login Code sa Telegram";
                     }
-                } else {
-                    let errMsg = result.detail || result.message || JSON.stringify(result);
-                    if (typeof errMsg === 'object') {
-                        errMsg = JSON.stringify(errMsg);
-                    }
-                    errorMsg.textContent = "May error sa server: " + errMsg;
+                } catch (err) {
+                    errorMsg.textContent = "May error sa koneksyon sa server.";
                     errorMsg.classList.remove('hidden');
+                    launchBtn.textContent = "1. Humingi ng Login Code sa Telegram";
+                } finally {
+                    launchBtn.disabled = false;
                 }
-            } catch (err) {
-                errorMsg.textContent = "May error sa koneksyon: " + err.message;
-                errorMsg.classList.remove('hidden');
-            } finally {
-                launchBtn.disabled = false;
-                launchBtn.innerHTML = '<i class="fa-solid fa-rocket"></i> Launch User Autoplug';
+            } else {
+                // HAKBANG 2: I-verify ang code at simulan ang pag-plug
+                const loginCode = document.getElementById('loginCode').value.trim();
+                const msgInput = document.getElementById('msgInput').value.trim();
+                const targetGroupsRaw = document.getElementById('targetGroups').value.trim();
+
+                if (!loginCode || !msgInput || !targetGroupsRaw) {
+                    errorMsg.textContent = "Ilagay ang login code, message, at target groups.";
+                    errorMsg.classList.remove('hidden');
+                    return;
+                }
+
+                const groupsArray = targetGroupsRaw.split('\n').map(g => g.trim()).filter(g => g.length > 0);
+
+                launchBtn.disabled = true;
+                launchBtn.textContent = "Kumokonekta at nagpapadala na...";
+
+                try {
+                    const response = await fetch('https://telegram-autoplugs.onrender.com/api/verify-code', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            api_id: parseInt(apiId),
+                            api_hash: apiHash,
+                            phone: tgPhone,
+                            code: loginCode,
+                            message: msgInput,
+                            groups: groupsArray
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (response.ok) {
+                        document.getElementById('statusSection').classList.remove('hidden');
+                        startCountdown(24 * 3600);
+
+                        if (result.logs && result.logs.length > 0) {
+                            const successfulPlugsList = document.getElementById('successfulPlugsList');
+                            successfulPlugsList.innerHTML = '';
+                            result.logs.forEach(log => {
+                                const timeNow = new Date().toLocaleTimeString();
+                                successfulPlugsList.innerHTML += `
+                                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between text-xs">
+                                        <span class="text-emerald-400 flex items-center gap-2"><i class="fa-solid fa-circle-check"></i> ${log}</span>
+                                        <span class="text-slate-400 font-mono">${timeNow}</span>
+                                    </div>
+                                `;
+                            });
+                        }
+                    } else {
+                        errorMsg.textContent = "Verification Error: " + (result.detail || "Mali ang code.");
+                        errorMsg.classList.remove('hidden');
+                    }
+                } catch (err) {
+                    errorMsg.textContent = "May error sa koneksyon sa server.";
+                    errorMsg.classList.remove('hidden');
+                } finally {
+                    launchBtn.disabled = false;
+                    launchBtn.textContent = "2. I-verify ang Code at Simulan ang Autoplug";
+                }
             }
         }
 
         function startCountdown(durationInSeconds) {
             let timer = durationInSeconds;
             const timerDisplay = document.getElementById('countdownTimer');
-
             setInterval(() => {
                 let hours = Math.floor(timer / 3600);
                 let minutes = Math.floor((timer % 3600) / 60);
                 let seconds = timer % 60;
-
                 timerDisplay.textContent = 
                     String(hours).padStart(2, '0') + ":" +
                     String(minutes).padStart(2, '0') + ":" +
                     String(seconds).padStart(2, '0');
-
                 if (--timer < 0) timer = 0;
             }, 1000);
         }
