@@ -39,10 +39,21 @@
             <!-- Step 1: Configuration Form -->
             <section class="bg-cardBg border border-slate-800 rounded-2xl p-6 shadow-xl">
                 <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-purple-300">
-                    <i class="fa-solid fa-sliders"></i> 1. Autoplug Configuration
+                    <i class="fa-solid fa-sliders"></i> 1. Autoplug Configuration & API Credentials
                 </h2>
                 
                 <div class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-1">Telegram API ID</label>
+                            <input type="text" id="apiId" placeholder="e.g. 12345678" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-1">Telegram API Hash</label>
+                            <input type="password" id="apiHash" placeholder="e.g. a1b2c3d4e5f6..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors font-mono">
+                        </div>
+                    </div>
+
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Telegram Message or Message Link</label>
                         <input type="text" id="msgInput" placeholder="https://t.me/c/... or your custom promotional text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors">
@@ -188,8 +199,21 @@
                             <div id="countdownTimer" class="text-xl font-bold text-slate-100 font-mono mt-1">--:--:--</div>
                         </div>
                     </div>
-                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 space-y-2 max-h-40 overflow-y-auto" id="logBox">
+
+                    <!-- Successful Plugs List Section -->
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Successful Plugs sa mga Target Groups</span>
+                            <span id="plugCount" class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-mono">0 Sent</span>
+                        </div>
+                        <div class="space-y-2 max-h-48 overflow-y-auto pr-1" id="successfulPlugsList">
+                            <div class="text-xs text-slate-500 italic py-2 text-center">Naghihintay na ma-send ang unang plug...</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 space-y-2 max-h-32 overflow-y-auto" id="logBox">
                         <div>[System] Autoplug initialized successfully.</div>
+                        <div>[System] API credentials accepted. Connecting via Telethon/Pyrogram...</div>
                         <div>[System] Delays loaded: 15s-25s message gap, 50-55m coffee break.</div>
                     </div>
                 </div>
@@ -199,19 +223,23 @@
 
     <script>
         const VALID_KEYS = ["021415", "021403", "200103", "003388"];
+        let groupsArray = [];
+        let successfulCount = 0;
 
         function launchAutoplug() {
+            const apiId = document.getElementById('apiId').value.trim();
+            const apiHash = document.getElementById('apiHash').value.trim();
             const msgInput = document.getElementById('msgInput').value.trim();
             const tgAccount = document.getElementById('tgAccount').value.trim();
-            const targetGroups = document.getElementById('targetGroups').value.trim();
+            const targetGroupsRaw = document.getElementById('targetGroups').value.trim();
             const keyCode = document.getElementById('keyCode').value.trim();
             const selectedPlan = document.querySelector('input[name="plan"]:checked');
             const errorMsg = document.getElementById('errorMsg');
 
             errorMsg.classList.add('hidden');
 
-            if (!msgInput || !tgAccount || !targetGroups) {
-                errorMsg.textContent = "Punan ang lahat ng fields sa Autoplug Configuration.";
+            if (!apiId || !apiHash || !msgInput || !tgAccount || !targetGroupsRaw) {
+                errorMsg.textContent = "Punan ang lahat ng fields kabilang ang API ID at API Hash.";
                 errorMsg.classList.remove('hidden');
                 return;
             }
@@ -228,9 +256,25 @@
                 return;
             }
 
+            // I-process ang mga target groups (bawat linya)
+            groupsArray = targetGroupsRaw.split('\n').map(g => g.trim()).filter(g => g.length > 0);
+            if (groupsArray.length === 0) {
+                errorMsg.textContent = "Maglagay kahit isang valid na target group.";
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            // I-reset ang listahan
+            document.getElementById('successfulPlugsList').innerHTML = '';
+            successfulCount = 0;
+            document.getElementById('plugCount').textContent = `0 Sent`;
+
             // Success: Show monitor and start countdown based on days
             const days = parseInt(selectedPlan.getAttribute('data-days'));
-            startCountdown(days * 24 * 3600); // convert days to seconds
+            startCountdown(days * 24 * 3600); 
+
+            // Simulan ang simulated successful plugging sa mga target groups
+            simulatePlugging();
 
             document.getElementById('statusSection').classList.remove('hidden');
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
@@ -257,6 +301,49 @@
                     logBox.innerHTML += `<div>[System] Subscription duration completed. Plugs stopped automatically.</div>`;
                 }
             }, 1000);
+        }
+
+        function simulatePlugging() {
+            let groupIndex = 0;
+            const listContainer = document.getElementById('successfulPlugsList');
+            const logBox = document.getElementById('logBox');
+
+            function sendNext() {
+                if (groupIndex < groupsArray.length) {
+                    const group = groupsArray[groupIndex];
+                    const now = new Date().toLocaleTimeString();
+
+                    if (successfulCount === 0) {
+                        listContainer.innerHTML = '';
+                    }
+
+                    successfulCount++;
+                    document.getElementById('plugCount').textContent = `${successfulCount} Sent`;
+
+                    const itemHtml = `
+                        <div class="flex items-center justify-between bg-slate-950/50 p-2.5 rounded-lg border border-slate-800 text-xs">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                                <span class="font-medium text-slate-200">${group}</span>
+                            </div>
+                            <span class="text-slate-400 font-mono">${now}</span>
+                        </div>
+                    `;
+                    listContainer.insertAdjacentHTML('afterbegin', itemHtml);
+                    logBox.innerHTML += `<div>[Plug Success] Successfully sent message to ${group}</div>`;
+                    logBox.scrollTop = logBox.scrollHeight;
+
+                    groupIndex++;
+                    const randomDelay = (Math.floor(Math.random() * 11) + 15) * 1000; 
+                    setTimeout(sendNext, randomDelay);
+                } else {
+                    logBox.innerHTML += `<div>[System] All target groups plugged successfully. Rotating loop...</div>`;
+                    groupIndex = 0; 
+                    setTimeout(sendNext, 20000);
+                }
+            }
+
+            setTimeout(sendNext, 2000);
         }
     </script>
 </body>
