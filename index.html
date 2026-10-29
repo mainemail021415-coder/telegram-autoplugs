@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Peony SMM - Telegram Autoplug Dashboard</title>
+    <title>Peony SMM - Telegram Bot Autoplug Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -30,52 +30,32 @@
                 <i class="fa-solid fa-robot text-3xl text-accentPurple"></i>
             </div>
             <h1 class="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-400 to-emerald-400 bg-clip-text text-transparent">
-                Telegram Autoplug Client Dashboard
+                Telegram Bot Autoplug Dashboard
             </h1>
-            <p class="text-slate-400 mt-2 text-sm">Secure automated messaging tool with anti-flood protection</p>
+            <p class="text-slate-400 mt-2 text-sm">Automated group messaging via Telegram Bot API</p>
         </header>
 
         <div class="grid gap-8">
             <!-- Step 1: Configuration Form -->
             <section class="bg-cardBg border border-slate-800 rounded-2xl p-6 shadow-xl">
                 <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-purple-300">
-                    <i class="fa-solid fa-sliders"></i> 1. Autoplug Configuration & API Credentials
+                    <i class="fa-solid fa-sliders"></i> 1. Bot Configuration
                 </h2>
                 
                 <div class="space-y-4">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-300 mb-1">Telegram API ID</label>
-                            <input type="text" id="apiId" placeholder="e.g. 12345678" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-300 mb-1">Telegram API Hash</label>
-                            <input type="password" id="apiHash" placeholder="e.g. a1b2c3d4e5f6..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors font-mono">
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Telegram Bot Token (galing kay @BotFather)</label>
+                        <input type="text" id="botToken" placeholder="e.g. 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors font-mono">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-1">Telegram Message or Message Link</label>
-                        <input type="text" id="msgInput" placeholder="https://t.me/c/... or your custom promotional text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-1">Your Telegram Account / Username</label>
-                        <input type="text" id="tgAccount" placeholder="@yourusername" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors">
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Telegram Promotional Message</label>
+                        <textarea id="msgInput" rows="3" placeholder="Ilagay ang iyong promotional text dito..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors"></textarea>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Target Telegram Groups (Isa bawat linya)</label>
                         <textarea id="targetGroups" rows="4" placeholder="@group1&#10;@group2&#10;@group3" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 transition-colors"></textarea>
-                    </div>
-
-                    <!-- Safety Intervals Box -->
-                    <div class="bg-slate-900/80 border border-emerald-500/30 rounded-xl p-4 text-xs font-mono text-emerald-400 space-y-1">
-                        <div class="font-bold text-slate-200 mb-2"># --- INTERVALS / TIME DELAYS (Anti-Flood Protection) ---</div>
-                        <div>MESSAGE_DELAY_MIN = 15 # Minimum 15 secs pagitan</div>
-                        <div>MESSAGE_DELAY_MAX = 25 # Maximum 25 secs pagitan</div>
-                        <div>COFFEE_BREAK_MIN_MINS = 50 # Minimum 50 mins break</div>
-                        <div>COFFEE_BREAK_MAX_MINS = 55 # Maximum 55 mins break</div>
                     </div>
                 </div>
             </section>
@@ -85,71 +65,21 @@
                 <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-purple-300">
                     <i class="fa-solid fa-tag"></i> 2. Pumili ng Subscription Plan
                 </h2>
-                
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="pricingGrid">
                     <label class="plan-card border border-slate-700 bg-slate-900/50 p-4 rounded-xl cursor-pointer hover:border-purple-500 transition-all flex flex-col justify-between">
                         <div class="flex items-center justify-between mb-2">
                             <span class="font-semibold text-slate-200">1 Day (24 Hours)</span>
-                            <input type="radio" name="plan" value="50" data-days="1" class="accent-purple-500">
+                            <input type="radio" name="plan" value="50" data-days="1" class="accent-purple-500" checked>
                         </div>
                         <div class="text-xl font-bold text-emerald-400">₱50</div>
-                        <div class="text-xs text-slate-400 mt-1">Auto-stops after 24 hours</div>
-                    </label>
-
-                    <label class="plan-card border border-slate-700 bg-slate-900/50 p-4 rounded-xl cursor-pointer hover:border-purple-500 transition-all flex flex-col justify-between">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="font-semibold text-slate-200">2 Days</span>
-                            <input type="radio" name="plan" value="75" data-days="2" class="accent-purple-500">
-                        </div>
-                        <div class="text-xl font-bold text-emerald-400">₱75</div>
-                    </label>
-
-                    <label class="plan-card border border-slate-700 bg-slate-900/50 p-4 rounded-xl cursor-pointer hover:border-purple-500 transition-all flex flex-col justify-between">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="font-semibold text-slate-200">3 Days</span>
-                            <input type="radio" name="plan" value="125" data-days="3" class="accent-purple-500">
-                        </div>
-                        <div class="text-xl font-bold text-emerald-400">₱125</div>
-                    </label>
-
-                    <label class="plan-card border border-slate-700 bg-slate-900/50 p-4 rounded-xl cursor-pointer hover:border-purple-500 transition-all flex flex-col justify-between">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="font-semibold text-slate-200">4 Days</span>
-                            <input type="radio" name="plan" value="145" data-days="4" class="accent-purple-500">
-                        </div>
-                        <div class="text-xl font-bold text-emerald-400">₱145</div>
-                    </label>
-
-                    <label class="plan-card border border-slate-700 bg-slate-900/50 p-4 rounded-xl cursor-pointer hover:border-purple-500 transition-all flex flex-col justify-between">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="font-semibold text-slate-200">5 Days</span>
-                            <input type="radio" name="plan" value="165" data-days="5" class="accent-purple-500">
-                        </div>
-                        <div class="text-xl font-bold text-emerald-400">₱165</div>
-                    </label>
-
-                    <label class="plan-card border border-slate-700 bg-slate-900/50 p-4 rounded-xl cursor-pointer hover:border-purple-500 transition-all flex flex-col justify-between">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="font-semibold text-slate-200">6 Days</span>
-                            <input type="radio" name="plan" value="185" data-days="6" class="accent-purple-500">
-                        </div>
-                        <div class="text-xl font-bold text-emerald-400">₱185</div>
-                    </label>
-
-                    <label class="plan-card border border-slate-700 bg-slate-900/50 p-4 rounded-xl cursor-pointer hover:border-purple-500 transition-all flex flex-col justify-between sm:col-span-2 lg:col-span-1">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="font-semibold text-slate-200">7 Days</span>
-                            <input type="radio" name="plan" value="199" data-days="7" class="accent-purple-500">
-                        </div>
-                        <div class="text-xl font-bold text-emerald-400">₱199</div>
                     </label>
                 </div>
             </section>
 
-            <!-- Step 3: Payment & Telegram Contact -->
+            <!-- Step 3: Payment & Launch -->
             <section class="bg-cardBg border border-slate-800 rounded-2xl p-6 shadow-xl">
                 <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-purple-300">
-                    <i class="fa-solid fa-wallet"></i> 3. Payment & Confirmation
+                    <i class="fa-solid fa-wallet"></i> 3. Payment & Key Code
                 </h2>
                 
                 <div class="bg-slate-900 p-5 rounded-xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
@@ -163,11 +93,6 @@
                     </a>
                 </div>
 
-                <p class="text-xs text-slate-400 leading-relaxed mb-6">
-                    ⚠️ <strong class="text-slate-200">Tandaan:</strong> Bago makapagsalang ng plug, i-contact muna si <span class="text-purple-400 font-semibold">@peony03</span> sa Telegram para sa confirmation ng payment. Pagkatapos ma-confirm, bibigyan ka ng key code para mai-input sa ibaba.
-                </p>
-
-                <!-- Key Code & Launch -->
                 <div class="space-y-4 pt-4 border-t border-slate-800">
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Ilagay ang Key Code na ibinigay ni @peony03</label>
@@ -175,13 +100,13 @@
                     </div>
 
                     <button id="launchBtn" onclick="launchAutoplug()" class="w-full bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-900/20 transition-all flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-rocket"></i> Launch Autoplug
+                        <i class="fa-solid fa-rocket"></i> Launch Bot Autoplug
                     </button>
                     <div id="errorMsg" class="text-red-400 text-xs text-center hidden"></div>
                 </div>
             </section>
 
-            <!-- Status Monitor (Hidden until launched) -->
+            <!-- Status Monitor -->
             <section id="statusSection" class="bg-cardBg border border-emerald-500/30 rounded-2xl p-6 shadow-xl hidden">
                 <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-emerald-400">
                     <i class="fa-solid fa-circle-dot animate-pulse"></i> Active Autoplug Monitor
@@ -191,29 +116,22 @@
                         <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
                             <div class="text-xs text-slate-400">Status</div>
                             <div class="text-emerald-400 font-bold mt-1 flex items-center gap-2">
-                                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span> CLOUD BACKEND CONNECTED
+                                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span> BOT ACTIVE & SENDING
                             </div>
                         </div>
                         <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
                             <div class="text-xs text-slate-400">Time Remaining</div>
-                            <div id="countdownTimer" class="text-xl font-bold text-slate-100 font-mono mt-1">--:--:--</div>
+                            <div id="countdownTimer" class="text-xl font-bold text-slate-100 font-mono mt-1">24:00:00</div>
                         </div>
                     </div>
 
-                    <!-- Successful Plugs List Section -->
                     <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
                         <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Backend Automation Status</span>
-                            <span id="plugCount" class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-mono">Live</span>
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Live Sending Results</span>
                         </div>
                         <div class="space-y-2 max-h-48 overflow-y-auto pr-1" id="successfulPlugsList">
-                            <div class="text-xs text-emerald-400 italic py-2 text-center">Nagpapadala na sa mga target groups...</div>
+                            <div class="text-xs text-emerald-400 italic py-2 text-center">Nagsisimula nang magpadala ang bot...</div>
                         </div>
-                    </div>
-
-                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 space-y-2 max-h-32 overflow-y-auto" id="logBox">
-                        <div>[System] Autoplug configuration initialized.</div>
-                        <div>[System] Connecting to Render backend server...</div>
                     </div>
                 </div>
             </section>
@@ -224,31 +142,22 @@
         const VALID_KEYS = ["021415", "021403", "200103", "003388"];
 
         async function launchAutoplug() {
-            const apiId = document.getElementById('apiId').value.trim();
-            const apiHash = document.getElementById('apiHash').value.trim();
+            const botToken = document.getElementById('botToken').value.trim();
             const msgInput = document.getElementById('msgInput').value.trim();
-            const tgAccount = document.getElementById('tgAccount').value.trim();
             const targetGroupsRaw = document.getElementById('targetGroups').value.trim();
             const keyCode = document.getElementById('keyCode').value.trim();
-            const selectedPlan = document.querySelector('input[name="plan"]:checked');
             const errorMsg = document.getElementById('errorMsg');
 
             errorMsg.classList.add('hidden');
 
-            if (!apiId || !apiHash || !msgInput || !tgAccount || !targetGroupsRaw) {
-                errorMsg.textContent = "Punan ang lahat ng fields kabilang ang API ID at API Hash.";
-                errorMsg.classList.remove('hidden');
-                return;
-            }
-
-            if (!selectedPlan) {
-                errorMsg.textContent = "Pumili muna ng subscription plan.";
+            if (!botToken || !msgInput || !targetGroupsRaw) {
+                errorMsg.textContent = "Punan ang Bot Token, Message, at Target Groups.";
                 errorMsg.classList.remove('hidden');
                 return;
             }
 
             if (!VALID_KEYS.includes(keyCode)) {
-                errorMsg.textContent = "Invalid Key Code. Mangyaring kontakin si @peony03 para sa tamang key code.";
+                errorMsg.textContent = "Invalid Key Code. Kontakin si @peony03.";
                 errorMsg.classList.remove('hidden');
                 return;
             }
@@ -262,16 +171,14 @@
 
             const launchBtn = document.getElementById('launchBtn');
             launchBtn.disabled = true;
-            launchBtn.textContent = "Nagpapadala sa Telegram Groups...";
+            launchBtn.textContent = "Nagpapadala ang Bot...";
 
             try {
                 const response = await fetch('https://telegram-autoplugs.onrender.com/api/start-autoplug', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        api_id: parseInt(apiId),
-                        api_hash: apiHash,
-                        phone: tgAccount,
+                        bot_token: botToken,
                         message: msgInput,
                         groups: groupsArray
                     })
@@ -281,12 +188,8 @@
 
                 if (response.ok) {
                     document.getElementById('statusSection').classList.remove('hidden');
-                    const days = parseInt(selectedPlan.getAttribute('data-days'));
-                    startCountdown(days * 24 * 3600); 
+                    startCountdown(24 * 3600); 
 
-                    const logBox = document.getElementById('logBox');
-                    logBox.innerHTML += `<div>[Backend Success] ${result.message}</div>`;
-                    
                     if (result.logs && result.logs.length > 0) {
                         const successfulPlugsList = document.getElementById('successfulPlugsList');
                         successfulPlugsList.innerHTML = '';
@@ -300,31 +203,24 @@
                             `;
                         });
                     }
-
-                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
                 } else {
                     errorMsg.textContent = "May error sa server: " + (result.detail || "Subukang muli.");
                     errorMsg.classList.remove('hidden');
                 }
             } catch (err) {
-                errorMsg.textContent = "Hindi ma-reach ang backend server sa Render. Pakisigurong active ito.";
+                errorMsg.textContent = "Hindi ma-reach ang backend server sa Render.";
                 errorMsg.classList.remove('hidden');
             } finally {
                 launchBtn.disabled = false;
-                launchBtn.innerHTML = '<i class="fa-solid fa-rocket"></i> Launch Autoplug';
+                launchBtn.innerHTML = '<i class="fa-solid fa-rocket"></i> Launch Bot Autoplug';
             }
         }
 
         function startCountdown(durationInSeconds) {
             let timer = durationInSeconds;
             const timerDisplay = document.getElementById('countdownTimer');
-            const logBox = document.getElementById('logBox');
 
-            if (window.activeCountdownInterval) {
-                clearInterval(window.activeCountdownInterval);
-            }
-
-            window.activeCountdownInterval = setInterval(() => {
+            setInterval(() => {
                 let hours = Math.floor(timer / 3600);
                 let minutes = Math.floor((timer % 3600) / 60);
                 let seconds = timer % 60;
@@ -334,11 +230,7 @@
                     String(minutes).padStart(2, '0') + ":" +
                     String(seconds).padStart(2, '0');
 
-                if (--timer < 0) {
-                    clearInterval(window.activeCountdownInterval);
-                    timerDisplay.textContent = "EXPIRED (Auto-stopped)";
-                    logBox.innerHTML += `<div>[System] Kumpleto na ang oras ng iyong subscription. Naka-stop na ang system.</div>`;
-                }
+                if (--timer < 0) timer = 0;
             }, 1000);
         }
     </script>
