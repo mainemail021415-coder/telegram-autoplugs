@@ -373,7 +373,6 @@
             }
         }
 
-        // Kukuha ng bagong logs sa server kada 5 segundo para sa real-time display
         function startLiveLogsPolling(phone) {
             if (logsInterval) clearInterval(logsInterval);
 
@@ -400,7 +399,7 @@
                 } catch (err) {
                     console.error("Error fetching logs:", err);
                 }
-            }, 5000); // Bawat 5 segundo i-a-update ang logs sa screen
+            }, 5000);
         }
 
         function startCountdown(durationInSeconds) {
