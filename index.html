@@ -191,7 +191,7 @@
                         <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
                             <div class="text-xs text-slate-400">Status</div>
                             <div class="text-emerald-400 font-bold mt-1 flex items-center gap-2">
-                                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span> RUNNING (Cloud Connected)
+                                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span> CLOUD BACKEND CONNECTED
                             </div>
                         </div>
                         <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
@@ -203,18 +203,17 @@
                     <!-- Successful Plugs List Section -->
                     <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
                         <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Successful Plugs sa mga Target Groups</span>
-                            <span id="plugCount" class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-mono">0 Sent</span>
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Backend Automation Status</span>
+                            <span id="plugCount" class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-mono">Live</span>
                         </div>
                         <div class="space-y-2 max-h-48 overflow-y-auto pr-1" id="successfulPlugsList">
-                            <div class="text-xs text-slate-500 italic py-2 text-center">Naghihintay na ma-send ang unang plug...</div>
+                            <div class="text-xs text-emerald-400 italic py-2 text-center">Naipadala na ang request sa Render backend server...</div>
                         </div>
                     </div>
 
                     <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 space-y-2 max-h-32 overflow-y-auto" id="logBox">
-                        <div>[System] Autoplug initialized successfully.</div>
-                        <div>[System] API credentials accepted. Connecting via Telethon/Pyrogram...</div>
-                        <div>[System] Delays loaded: 15s-25s message gap, 50-55m coffee break.</div>
+                        <div>[System] Autoplug configuration initialized.</div>
+                        <div>[System] Connecting to Render backend server...</div>
                     </div>
                 </div>
             </section>
@@ -223,8 +222,6 @@
 
     <script>
         const VALID_KEYS = ["021415", "021403", "200103", "003388"];
-        let groupsArray = [];
-        let successfulCount = 0;
 
         async function launchAutoplug() {
             const apiId = document.getElementById('apiId').value.trim();
@@ -256,15 +253,20 @@
                 return;
             }
 
-            groupsArray = targetGroupsRaw.split('\n').map(g => g.trim()).filter(g => g.length > 0);
+            const groupsArray = targetGroupsRaw.split('\n').map(g => g.trim()).filter(g => g.length > 0);
             if (groupsArray.length === 0) {
                 errorMsg.textContent = "Maglagay kahit isang valid na target group.";
                 errorMsg.classList.remove('hidden');
                 return;
             }
 
-            // I-send ang data sa live Python backend sa Render
+            // I-disable mula sa button ang multiple clicks habang nagpapadala
+            const launchBtn = document.getElementById('launchBtn');
+            launchBtn.disabled = true;
+            launchBtn.textContent = "Connecting to Render Backend...";
+
             try {
+                // Tunay na pagtawag sa Render Python backend API
                 const response = await fetch('https://telegram-autoplugs.onrender.com/api/start-autoplug', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -277,27 +279,26 @@
                     })
                 });
 
-                if (!response.ok) {
-                    throw new Error("Server response error");
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('statusSection').classList.remove('hidden');
+                    const days = parseInt(selectedPlan.getAttribute('data-days'));
+                    startCountdown(days * 24 * 3600); 
+
+                    document.getElementById('logBox').innerHTML += `<div>[Backend Success] ${result.message}</div>`;
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                } else {
+                    errorMsg.textContent = "May error sa server: " + (result.detail || "Subukang muli.");
+                    errorMsg.classList.remove('hidden');
                 }
             } catch (err) {
-                console.warn("Backend connection notice: Simulation running.", err);
+                errorMsg.textContent = "Hindi ma-reach ang backend server sa Render. Pakisigurong active ito.";
+                errorMsg.classList.remove('hidden');
+            } finally {
+                launchBtn.disabled = false;
+                launchBtn.innerHTML = '<i class="fa-solid fa-rocket"></i> Launch Autoplug';
             }
-
-            // I-reset ang listahan
-            document.getElementById('successfulPlugsList').innerHTML = '';
-            successfulCount = 0;
-            document.getElementById('plugCount').textContent = `0 Sent`;
-
-            // Success: Show monitor and start countdown based on days
-            const days = parseInt(selectedPlan.getAttribute('data-days'));
-            startCountdown(days * 24 * 3600); 
-
-            // Simulan ang simulated successful plugging sa mga target groups
-            simulatePlugging();
-
-            document.getElementById('statusSection').classList.remove('hidden');
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
 
         function startCountdown(durationInSeconds) {
@@ -321,49 +322,6 @@
                     logBox.innerHTML += `<div>[System] Subscription duration completed. Plugs stopped automatically.</div>`;
                 }
             }, 1000);
-        }
-
-        function simulatePlugging() {
-            let groupIndex = 0;
-            const listContainer = document.getElementById('successfulPlugsList');
-            const logBox = document.getElementById('logBox');
-
-            function sendNext() {
-                if (groupIndex < groupsArray.length) {
-                    const group = groupsArray[groupIndex];
-                    const now = new Date().toLocaleTimeString();
-
-                    if (successfulCount === 0) {
-                        listContainer.innerHTML = '';
-                    }
-
-                    successfulCount++;
-                    document.getElementById('plugCount').textContent = `${successfulCount} Sent`;
-
-                    const itemHtml = `
-                        <div class="flex items-center justify-between bg-slate-950/50 p-2.5 rounded-lg border border-slate-800 text-xs">
-                            <div class="flex items-center gap-2">
-                                <i class="fa-solid fa-circle-check text-emerald-400"></i>
-                                <span class="font-medium text-slate-200">${group}</span>
-                            </div>
-                            <span class="text-slate-400 font-mono">${now}</span>
-                        </div>
-                    `;
-                    listContainer.insertAdjacentHTML('afterbegin', itemHtml);
-                    logBox.innerHTML += `<div>[Plug Success] Successfully sent message to ${group}</div>`;
-                    logBox.scrollTop = logBox.scrollHeight;
-
-                    groupIndex++;
-                    const randomDelay = (Math.floor(Math.random() * 11) + 15) * 1000; 
-                    setTimeout(sendNext, randomDelay);
-                } else {
-                    logBox.innerHTML += `<div>[System] All target groups plugged successfully. Rotating loop...</div>`;
-                    groupIndex = 0; 
-                    setTimeout(sendNext, 20000);
-                }
-            }
-
-            setTimeout(sendNext, 2000);
         }
     </script>
 </body>
