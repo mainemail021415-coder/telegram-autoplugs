@@ -22,7 +22,7 @@ async def root():
 
 active_clients = {}
 active_tasks = {}
-live_logs_storage = {} # Dito natin ise-save ang mga successful/failed logs bawat phone
+live_logs_storage = {}
 
 class SendCodeRequest(BaseModel):
     api_id: int
@@ -60,7 +60,6 @@ class VerifyAndStartRequest(BaseModel):
     groups: list[str]
     interval_minutes: int
 
-# Background loop na nagtatala ng bawat successful plug sa bawat ikot
 async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash: str, message: str, groups: list[str], interval_minutes: int):
     active_tasks[phone] = True
     delay_seconds = max(interval_minutes, 1) * 60
@@ -68,8 +67,8 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
     if phone not in live_logs_storage:
         live_logs_storage[phone] = []
 
+    client = TelegramClient(StringSession(session_str), api_id, api_hash)
     try:
-        client = TelegramClient(StringSession(session_str), api_id, api_hash)
         await client.connect()
 
         cycle_count = 1
@@ -95,12 +94,12 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                     log_text = f"Failed {clean_group}: {str(ex)} - {current_time}"
                     live_logs_storage[phone].append(log_text)
                 
-                # 10 minutes auto-delete bawat mensahe
+                # 10 minutes auto-delete (hati sa 10-second chunks para mabilis ma-stop)
                 if sent_msg:
-                    for _ in range(600):
+                    for _ in range(60):
                         if not active_tasks.get(phone, False):
                             break
-                        await asyncio.sleep(1)
+                        await asyncio.sleep(10)
                     
                     if active_tasks.get(phone, False):
                         try:
@@ -110,20 +109,26 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
 
                 await asyncio.sleep(5)
 
-            # Maghintay ng itinakdang interval minutes bago ang susunod na ikot
+            if not active_tasks.get(phone, False):
+                break
+
             live_logs_storage[phone].append(f"Tapos na ang Ikot #{cycle_count}. Naghihintay ng {interval_minutes} mins para sa susunod na ikot...")
             
-            for _ in range(delay_seconds):
-                if not active_tasks.get(phone, False):
-                    break
-                await asyncio.sleep(1)
+            sleep_remaining = delay_seconds
+            while sleep_remaining > 0 and active_tasks.get(phone, False):
+                chunk = min(10, sleep_remaining)
+                await asyncio.sleep(chunk)
+                sleep_remaining -= chunk
 
             cycle_count += 1
 
-        await client.disconnect()
     except Exception as e:
         live_logs_storage[phone].append(f"Loop Error: {str(e)}")
     finally:
+        try:
+            await client.disconnect()
+        except:
+            pass
         if phone in active_tasks:
             del active_tasks[phone]
 
