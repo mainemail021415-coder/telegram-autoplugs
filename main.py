@@ -2,7 +2,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import asyncio
-import httpx
+from telethon import TelegramClient
+from telethon.sessions import StringSession
 
 app = FastAPI()
 
@@ -16,46 +17,48 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return {"status": "online", "message": "Peony SMM Telegram Bot Backend is running successfully!"}
+    return {"status": "online", "message": "Peony SMM Telethon User-Client Backend is running!"}
 
-class BotAutoplugRequest(BaseModel):
-    bot_token: str
+class UserAutoplugRequest(BaseModel):
+    api_id: int
+    api_hash: str
+    phone: str
     message: str
     groups: list[str]
 
 @app.post("/api/start-autoplug")
-async def start_autoplug(data: BotAutoplugRequest):
-    print(f"--- NATANGGAP ANG BOT REQUEST --- Groups: {data.groups}")
+async def start_autoplug(data: UserAutoplugRequest):
     success_logs = []
-    url = f"https://api.telegram.org/bot{data.bot_token}/sendMessage"
     
     try:
-        async with httpx.AsyncClient() as client:
-            for group in data.groups:
-                clean_group = group.strip()
-                if not clean_group:
-                    continue
-                try:
-                    payload = {
-                        "chat_id": clean_group,
-                        "text": data.message
-                    }
-                    response = await client.post(url, json=payload, timeout=10.0)
-                    res_data = response.json()
-                    
-                    if res_data.get("ok"):
-                        success_logs.append(f"Successfully sent to {clean_group}")
-                    else:
-                        err_desc = res_data.get("description", "Unknown error")
-                        success_logs.append(f"Failed {clean_group}: {err_desc}")
-                    
-                    # Anti-flood delay (15 seconds)
-                    await asyncio.sleep(15)
-                except Exception as ex:
-                    success_logs.append(f"Error {clean_group}: {str(ex)}")
+        # Gumagamit tayo ng temporary session para sa user client
+        client = TelegramClient(StringSession(), data.api_id, data.api_hash)
+        await client.connect()
+        
+        # Suriin kung authorized ang session
+        if not await client.is_user_authorized():
+            await client.disconnect()
+            raise HTTPException(
+                status_code=400, 
+                detail="Hindi authorized ang API ID/Hash o kailangan ng interactive login. Subukang gamitin ang iyong personal session."
+            )
 
-        return {"status": "success", "logs": success_logs, "message": "Kumpleto na ang pagpapadala ng bot sa mga target groups!"}
-    
+        for group in data.groups:
+            clean_group = group.strip()
+            if not clean_group:
+                continue
+            try:
+                # Nagpapadala ang personal account ng user sa target group/channel
+                await client.send_message(clean_group, data.message)
+                success_logs.append(f"Successfully sent via account to {clean_group}")
+                
+                # 15 seconds anti-flood safety interval
+                await asyncio.sleep(15)
+            except Exception as ex:
+                success_logs.append(f"Failed {clean_group}: {str(ex)}")
+
+        await client.disconnect()
+        return {"status": "success", "logs": success_logs, "message": "Kumpleto na ang pagpapalabas ng plug gamit ang iyong Telegram account!"}
+
     except Exception as e:
-        print(f"Server Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
