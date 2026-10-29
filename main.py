@@ -6,7 +6,6 @@ from telethon import TelegramClient
 
 app = FastAPI()
 
-# I-allow ang CORS para makapag-connect ang frontend website mo
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,25 +23,25 @@ class AutoplugRequest(BaseModel):
 
 @app.post("/api/start-autoplug")
 async def start_autoplug(data: AutoplugRequest):
-    # Dito natin pwedeng patakbuhin ang Telethon session ng client
-    # Tandaan: Para sa mga web-based clients, mas mainam na gumamit ng temporary session
     try:
-        # Halimbawa ng Telethon background worker initiation
-        asyncio.create_task(run_telegram_plugs(data.api_id, data.api_hash, data.message, data.groups))
-        return {"status": "success", "message": "Autoplug started successfully on backend!"}
+        # I-trigger ang background task para mag-send ng real messages sa Telegram
+        asyncio.create_task(run_real_telegram_plugs(data.api_id, data.api_hash, data.message, data.groups))
+        return {"status": "success", "message": "Real Telethon autoplug started successfully on backend!"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-async def run_telegram_plugs(api_id, api_hash, message, groups):
-    # Pansamantalang client connection para sa automation loop
-    # Note: Kailangan muna nila ma-authenticate ang session (Phone login / string session)
-    client = TelegramClient('session_client', api_id, api_hash)
+async def run_real_telegram_plugs(api_id, api_hash, message, groups):
+    # Gamitin ang dynamic session para sa bawat kliyente
+    client = TelegramClient(f'session_{api_id}', api_id, api_hash)
     await client.connect()
     
     try:
         for group in groups:
-            # MESSAGE DELAY SAFETY (15-25 seconds para iwas FloodWait)
+            # Tunay na pagpapadala ng mensahe sa Telegram groups
             await client.send_message(group, message)
-            await asyncio.sleep(20) # Average ng 15-25 seconds delay
+            # Anti-flood safety delay (15-25 seconds)
+            await asyncio.sleep(20)
+    except Exception as e:
+        print(f"Error sending message: {e}")
     finally:
         await client.disconnect()
