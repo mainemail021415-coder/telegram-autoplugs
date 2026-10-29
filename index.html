@@ -32,7 +32,7 @@
             <h1 class="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-400 to-emerald-400 bg-clip-text text-transparent">
                 Telegram Interactive Autoplug Dashboard
             </h1>
-            <p class="text-slate-400 mt-2 text-sm">Secure login with automatic Telegram OTP verification</p>
+            <p class="text-slate-400 mt-2 text-sm">Secure login with automatic Telegram OTP verification & Stop control</p>
         </header>
 
         <div class="grid gap-8">
@@ -46,20 +46,20 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-1">Telegram API ID</label>
-                            <input type="text" id="apiId" placeholder="e.g. 12345678" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 font-mono">
+                            <input type="text" id="apiId" placeholder="e.g. 12345678" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-1">Telegram API Hash</label>
-                            <input type="password" id="apiHash" placeholder="e.g. a1b2c3d4e5f6..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 font-mono">
+                            <input type="password" id="apiHash" placeholder="e.g. a1b2c3d4e5f6..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono">
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Phone Number (May kasamang country code)</label>
-                        <input type="text" id="tgPhone" placeholder="+639XXXXXXXXX" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 font-mono">
+                        <input type="text" id="tgPhone" placeholder="+639XXXXXXXXX" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono">
                     </div>
 
-                    <!-- OTP Code Input (Hidden muna hangga't hindi pa nag-request ng code) -->
+                    <!-- OTP Code Input -->
                     <div id="otpSection" class="hidden bg-purple-950/40 border border-purple-500/30 p-4 rounded-xl space-y-3">
                         <label class="block text-sm font-medium text-purple-300">Ilagay ang Login Code na natanggap sa Telegram:</label>
                         <input type="text" id="loginCode" placeholder="e.g. 12345" class="w-full bg-slate-900 border border-purple-500 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono text-center text-lg tracking-widest">
@@ -67,12 +67,12 @@
 
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Telegram Promotional Message</label>
-                        <textarea id="msgInput" rows="3" placeholder="Ilagay ang iyong promotional text dito..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500"></textarea>
+                        <textarea id="msgInput" rows="3" placeholder="Ilagay ang iyong promotional text dito..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none"></textarea>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Target Telegram Groups (Isa bawat linya, gamitin ang @username)</label>
-                        <textarea id="targetGroups" rows="4" placeholder="@group1&#10;@group2" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500"></textarea>
+                        <textarea id="targetGroups" rows="4" placeholder="@group1&#10;@group2" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none"></textarea>
                     </div>
                 </div>
             </section>
@@ -116,7 +116,7 @@
                         <input type="text" id="keyCode" placeholder="Ilagay ang Key Code dito..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono tracking-wider">
                     </div>
 
-                    <button id="launchBtn" onclick="handleAuthAction()" class="w-full bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-900/20 transition-all flex items-center justify-center gap-2">
+                    <button id="launchBtn" onclick="handleAuthAction()" class="w-full bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-paper-plane"></i> 1. Humingi ng Login Code sa Telegram
                     </button>
                     <div id="errorMsg" class="text-red-400 text-xs text-center hidden"></div>
@@ -125,14 +125,20 @@
 
             <!-- Status Monitor -->
             <section id="statusSection" class="bg-cardBg border border-emerald-500/30 rounded-2xl p-6 shadow-xl hidden">
-                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-emerald-400">
-                    <i class="fa-solid fa-circle-dot animate-pulse"></i> Active Autoplug Monitor
-                </h2>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold flex items-center gap-2 text-emerald-400">
+                        <i class="fa-solid fa-circle-dot animate-pulse"></i> Active Autoplug Monitor
+                    </h2>
+                    <button onclick="stopAutoplug()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-stop"></i> Stop Autoplug
+                    </button>
+                </div>
+                
                 <div class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
                             <div class="text-xs text-slate-400">Status</div>
-                            <div class="text-emerald-400 font-bold mt-1 flex items-center gap-2">
+                            <div id="monitorStatusText" class="text-emerald-400 font-bold mt-1 flex items-center gap-2">
                                 <span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span> LOGGED IN & ACTIVE
                             </div>
                         </div>
@@ -182,7 +188,6 @@
             }
 
             if (!codeRequested) {
-                // HAKBANG 1: Humingi ng code mula sa Telegram
                 launchBtn.disabled = true;
                 launchBtn.textContent = "Nagpapadala ng code sa Telegram...";
 
@@ -216,7 +221,6 @@
                     launchBtn.disabled = false;
                 }
             } else {
-                // HAKBANG 2: I-verify ang code at simulan ang pag-plug
                 const loginCode = document.getElementById('loginCode').value.trim();
                 const msgInput = document.getElementById('msgInput').value.trim();
                 const targetGroupsRaw = document.getElementById('targetGroups').value.trim();
@@ -275,6 +279,28 @@
                     launchBtn.disabled = false;
                     launchBtn.textContent = "2. I-verify ang Code at Simulan ang Autoplug";
                 }
+            }
+        }
+
+        async function stopAutoplug() {
+            const tgPhone = document.getElementById('tgPhone').value.trim();
+            if (!tgPhone) return;
+
+            try {
+                const response = await fetch('https://telegram-autoplugs.onrender.com/api/stop-autoplug', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: tgPhone })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    document.getElementById('monitorStatusText').innerHTML = '<span class="h-2 w-2 rounded-full bg-red-500"></span> STOPPED BY USER';
+                    alert("Matagumpay na nai-stop ang autoplug!");
+                } else {
+                    alert("Hindi mapatigil ang plug: " + result.message);
+                }
+            } catch (err) {
+                alert("May error sa koneksyon sa pag-stop.");
             }
         }
 
