@@ -32,7 +32,7 @@
             <h1 class="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-400 to-emerald-400 bg-clip-text text-transparent">
                 Telegram Interactive Autoplug Dashboard
             </h1>
-            <p class="text-slate-400 mt-2 text-sm">Secure login with automatic Telegram OTP verification & Control buttons</p>
+            <p class="text-slate-400 mt-2 text-sm">Secure login with custom interval settings & stop/restart controls</p>
         </header>
 
         <div class="grid gap-8">
@@ -73,6 +73,28 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Target Telegram Groups (Isa bawat linya, gamitin ang @username)</label>
                         <textarea id="targetGroups" rows="4" placeholder="@group1&#10;@group2" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none"></textarea>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 4: Interval Settings -->
+            <section class="bg-cardBg border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <h2 class="text-lg font-semibold mb-2 flex items-center gap-2 text-purple-300">
+                    <i class="fa-solid fa-clock"></i> 4. Setting ng Interval Minutes
+                </h2>
+                <p class="text-xs text-slate-400 mb-4">Itakda kung gaano katagal ang pagitan bago ipadala sa susunod na grupo.</p>
+                
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Interval Minutes</label>
+                        <input type="number" id="intervalMinutes" value="35" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono">
+                    </div>
+                    <!-- Safety Note -->
+                    <div class="bg-yellow-500/10 border border-yellow-500/30 p-3 rounded-xl flex items-start gap-3">
+                        <i class="fa-solid fa-triangle-exclamation text-yellow-400 text-base mt-0.5"></i>
+                        <span class="text-xs text-yellow-200 leading-relaxed">
+                            <strong>Note:</strong> Minimum 35 minutes interval ang inirerekomenda upang maiwasan ang group ban o spam restriction ng Telegram.
+                        </span>
                     </div>
                 </div>
             </section>
@@ -215,7 +237,9 @@
                         launchBtn.textContent = "2. I-verify ang Code at Simulan ang Autoplug";
                         alert("Naipadala na ang code sa iyong Telegram app! Ilagay ito sa kahon.");
                     } else {
-                        errorMsg.textContent = "Error: " + (result.detail || "Hindi maipadala ang code.");
+                        let errText = result.detail;
+                        if (typeof errText === 'object') errText = JSON.stringify(errText);
+                        errorMsg.textContent = "Error: " + (errText || "Hindi maipadala ang code.");
                         errorMsg.classList.remove('hidden');
                         launchBtn.textContent = "1. Humingi ng Login Code sa Telegram";
                     }
@@ -230,6 +254,7 @@
                 const loginCode = document.getElementById('loginCode').value.trim();
                 const msgInput = document.getElementById('msgInput').value.trim();
                 const targetGroupsRaw = document.getElementById('targetGroups').value.trim();
+                const intervalMinutes = parseInt(document.getElementById('intervalMinutes').value.trim()) || 35;
 
                 if (!loginCode || !msgInput || !targetGroupsRaw) {
                     errorMsg.textContent = "Ilagay ang login code, message, at target groups.";
@@ -257,7 +282,8 @@
                         body: JSON.stringify({
                             ...savedSessionData,
                             message: msgInput,
-                            groups: groupsArray
+                            groups: groupsArray,
+                            interval_minutes: intervalMinutes
                         })
                     });
 
@@ -281,7 +307,9 @@
                             });
                         }
                     } else {
-                        errorMsg.textContent = "Verification Error: " + (result.detail || "Mali ang code.");
+                        let errText = result.detail;
+                        if (typeof errText === 'object') errText = JSON.stringify(errText);
+                        errorMsg.textContent = "Verification Error: " + (errText || "Mali ang code.");
                         errorMsg.classList.remove('hidden');
                     }
                 } catch (err) {
@@ -302,6 +330,7 @@
 
             const msgInput = document.getElementById('msgInput').value.trim();
             const targetGroupsRaw = document.getElementById('targetGroups').value.trim();
+            const intervalMinutes = parseInt(document.getElementById('intervalMinutes').value.trim()) || 35;
 
             if (!msgInput || !targetGroupsRaw) {
                 alert("Ilagay ang bagong message o mga bagong target groups bago i-restart.");
@@ -319,7 +348,8 @@
                     body: JSON.stringify({
                         ...savedSessionData,
                         message: msgInput,
-                        groups: groupsArray
+                        groups: groupsArray,
+                        interval_minutes: intervalMinutes
                     })
                 });
 
@@ -338,9 +368,11 @@
                             `;
                         });
                     }
-                    alert("Matagumpay na nai-restart ang autoplug gamit ang bagong mensahe o mga grupo!");
+                    alert("Matagumpay na nai-restart ang autoplug gamit ang bagong interval at mensahe!");
                 } else {
-                    alert("Hindi na-restart ang plug: " + (result.detail || "Error"));
+                    let errText = result.detail;
+                    if (typeof errText === 'object') errText = JSON.stringify(errText);
+                    alert("Hindi na-restart ang plug: " + (errText || "Error"));
                 }
             } catch (err) {
                 alert("May error sa koneksyon habang nagre-restart.");
