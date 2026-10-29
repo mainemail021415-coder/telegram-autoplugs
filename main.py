@@ -6,6 +6,7 @@ from telethon import TelegramClient
 
 app = FastAPI()
 
+# I-allow ang CORS para makapag-connect ang GitHub Pages website mo
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,24 +25,24 @@ class AutoplugRequest(BaseModel):
 @app.post("/api/start-autoplug")
 async def start_autoplug(data: AutoplugRequest):
     try:
-        # I-trigger ang background task para mag-send ng real messages sa Telegram
+        # Patatakbuhin ang automation sa background habang nagpapadala ng instant response sa frontend
         asyncio.create_task(run_real_telegram_plugs(data.api_id, data.api_hash, data.message, data.groups))
-        return {"status": "success", "message": "Real Telethon autoplug started successfully on backend!"}
+        return {"status": "success", "message": "Autoplug successfully triggered on Render backend server!"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 async def run_real_telegram_plugs(api_id, api_hash, message, groups):
-    # Gamitin ang dynamic session para sa bawat kliyente
+    # Pagbuo ng Telegram client gamit ang credentials ng kliyente
     client = TelegramClient(f'session_{api_id}', api_id, api_hash)
     await client.connect()
     
     try:
         for group in groups:
-            # Tunay na pagpapadala ng mensahe sa Telegram groups
+            # Tunay na pagpapadala ng mensahe sa Telegram group
             await client.send_message(group, message)
-            # Anti-flood safety delay (15-25 seconds)
+            # Anti-flood delay: 20 seconds (pasok sa 15-25s safe interval)
             await asyncio.sleep(20)
     except Exception as e:
-        print(f"Error sending message: {e}")
+        print(f"Error during plugging: {e}")
     finally:
         await client.disconnect()
