@@ -184,7 +184,13 @@
                     })
                 });
 
-                const result = await response.json();
+                const textResult = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(textResult);
+                } catch(e) {
+                    result = { detail: textResult };
+                }
 
                 if (response.ok) {
                     document.getElementById('statusSection').classList.remove('hidden');
@@ -204,11 +210,11 @@
                         });
                     }
                 } else {
-                    let errorText = result.detail;
-                    if (typeof errorText === 'object') {
-                        errorText = JSON.stringify(errorText);
+                    let errMsg = result.detail || result.message || JSON.stringify(result);
+                    if (typeof errMsg === 'object') {
+                        errMsg = JSON.stringify(errMsg);
                     }
-                    errorMsg.textContent = "May error sa server: " + (errorText || "Subukang muli.");
+                    errorMsg.textContent = "May error sa server: " + errMsg;
                     errorMsg.classList.remove('hidden');
                 }
             } catch (err) {
