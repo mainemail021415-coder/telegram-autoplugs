@@ -88,18 +88,17 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                 if not clean_group:
                     continue
                 
-                # --- AUTO-RECONNECT CHECK ---
+                # Seguraduhing active ang koneksyon bago mag-send
                 try:
                     if not client.is_connected():
                         await client.connect()
                 except Exception as conn_ex:
                     live_logs_storage[phone].append(f"Reconnecting warning: {str(conn_ex)}")
-                    await asyncio.sleep(5)
+                    await asyncio.sleep(3)
                     try:
                         await client.connect()
                     except:
                         pass
-                # ----------------------------
 
                 sent_msg = None
                 try:
@@ -109,8 +108,15 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                     live_logs_storage[phone].append(log_text)
                 except Exception as ex:
                     current_time = datetime.now().strftime("%I:%M:%S %p")
-                    log_text = f"Failed {clean_group}: {str(ex)} - {current_time}"
+                    err_str = str(ex)
+                    log_text = f"Failed {clean_group}: {err_str} - {current_time}"
                     live_logs_storage[phone].append(log_text)
+                    
+                    # Kung sakaling nasira ang session, i-stop ang loop para hindi magpatuloy ang error
+                    if "AuthKeyUnregistered" in err_str or "Session" in err_str:
+                        live_logs_storage[phone].append("Na-invalidate ang session. Kailangan mag-login muli.")
+                        active_tasks[phone] = False
+                        break
                 
                 # 10 minutes auto-delete task
                 if sent_msg:
