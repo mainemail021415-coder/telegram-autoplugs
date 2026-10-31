@@ -46,17 +46,17 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-1">Telegram API ID</label>
-                            <input type="text" id="apiId" placeholder="e.g. 12345678" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono">
+                            <input type="text" id="apiId" placeholder="e.g. 12345678" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono" oninput="saveFormState()">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-1">Telegram API Hash</label>
-                            <input type="password" id="apiHash" placeholder="e.g. a1b2c3d4e5f6..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono">
+                            <input type="password" id="apiHash" placeholder="e.g. a1b2c3d4e5f6..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono" oninput="saveFormState()">
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Phone Number (May kasamang country code)</label>
-                        <input type="text" id="tgPhone" placeholder="+639XXXXXXXXX" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono">
+                        <input type="text" id="tgPhone" placeholder="+639XXXXXXXXX" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono" oninput="saveFormState()">
                     </div>
 
                     <!-- OTP Code Input -->
@@ -67,12 +67,12 @@
 
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Telegram Promotional Message</label>
-                        <textarea id="msgInput" rows="3" placeholder="Ilagay ang iyong promotional text dito..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none"></textarea>
+                        <textarea id="msgInput" rows="3" placeholder="Ilagay ang iyong promotional text dito..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none" oninput="saveFormState()"></textarea>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Target Telegram Groups (Isa bawat linya, gamitin ang @username)</label>
-                        <textarea id="targetGroups" rows="4" placeholder="@group1&#10;@group2" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none"></textarea>
+                        <textarea id="targetGroups" rows="4" placeholder="@group1&#10;@group2" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none" oninput="saveFormState()"></textarea>
                     </div>
                 </div>
             </section>
@@ -80,19 +80,19 @@
             <!-- Step 4: Interval Settings -->
             <section class="bg-cardBg border border-slate-800 rounded-2xl p-6 shadow-xl">
                 <h2 class="text-lg font-semibold mb-2 flex items-center gap-2 text-purple-300">
-                    <i class="fa-solid fa-clock"></i> 4. Setting ng Interval Minutes
+                    <i class="fa-solid fa-clock"></i> 4. Setting ng Interval Minutes (35-40 mins)
                 </h2>
                 <p class="text-xs text-slate-400 mb-4">Itakda kung gaano katagal ang pagitan bago ang susunod na ikot ng pag-plug.</p>
                 
                 <div class="space-y-3">
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Interval Minutes</label>
-                        <input type="number" id="intervalMinutes" value="35" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono">
+                        <input type="number" id="intervalMinutes" value="35" min="35" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono" oninput="saveFormState()">
                     </div>
                     <div class="bg-yellow-500/10 border border-yellow-500/30 p-3 rounded-xl flex items-start gap-3">
                         <i class="fa-solid fa-triangle-exclamation text-yellow-400 text-base mt-0.5"></i>
                         <span class="text-xs text-yellow-200 leading-relaxed">
-                            <strong>Note:</strong> Minimum 35 minutes ang inirerekomenda para maiwasan ang ban. May 10-min auto-delete din bawat mensahe.
+                            <strong>Note:</strong> May 1-minute delay kada grupo, tapos hihintayin ang interval bago ang susunod na ikot. 24-hour total limit bago kusa mag-stop.
                         </span>
                     </div>
                 </div>
@@ -134,7 +134,7 @@
                 <div class="space-y-4 pt-4 border-t border-slate-800">
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Ilagay ang Key Code na ibinigay ni @peony03</label>
-                        <input type="text" id="keyCode" placeholder="Ilagay ang Key Code dito..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono tracking-wider">
+                        <input type="text" id="keyCode" placeholder="Ilagay ang Key Code dito..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none font-mono tracking-wider" oninput="saveFormState()">
                     </div>
 
                     <button id="launchBtn" onclick="handleAuthAction()" class="w-full bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
@@ -169,7 +169,7 @@
                             </div>
                         </div>
                         <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                            <div class="text-xs text-slate-400">Time Remaining</div>
+                            <div class="text-xs text-slate-400">Time Remaining (24H Limit)</div>
                             <div id="countdownTimer" class="text-xl font-bold text-slate-100 font-mono mt-1">24:00:00</div>
                         </div>
                     </div>
@@ -192,6 +192,47 @@
         let codeRequested = false;
         let savedSessionData = null;
         let logsInterval = null;
+
+        function saveFormState() {
+            const formData = {
+                apiId: document.getElementById('apiId').value,
+                apiHash: document.getElementById('apiHash').value,
+                tgPhone: document.getElementById('tgPhone').value,
+                msgInput: document.getElementById('msgInput').value,
+                targetGroups: document.getElementById('targetGroups').value,
+                intervalMinutes: document.getElementById('intervalMinutes').value,
+                keyCode: document.getElementById('keyCode').value
+            };
+            localStorage.setItem('peony_autoplug_form', JSON.stringify(formData));
+        }
+
+        function loadFormState() {
+            const saved = localStorage.getItem('peony_autoplug_form');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    if (data.apiId) document.getElementById('apiId').value = data.apiId;
+                    if (data.apiHash) document.getElementById('apiHash').value = data.apiHash;
+                    if (data.tgPhone) document.getElementById('tgPhone').value = data.tgPhone;
+                    if (data.msgInput) document.getElementById('msgInput').value = data.msgInput;
+                    if (data.targetGroups) document.getElementById('targetGroups').value = data.targetGroups;
+                    if (data.intervalMinutes) document.getElementById('intervalMinutes').value = data.intervalMinutes;
+                    if (data.keyCode) document.getElementById('keyCode').value = data.keyCode;
+                } catch (e) {
+                    console.error("Error loading form state:", e);
+                }
+            }
+        }
+
+        window.onload = function() {
+            loadFormState();
+            const phone = document.getElementById('tgPhone').value.trim();
+            if (phone) {
+                startLiveLogsPolling(phone);
+                document.getElementById('statusSection').classList.remove('hidden');
+                startCountdown(24 * 3600);
+            }
+        };
 
         async function handleAuthAction() {
             const apiId = document.getElementById('apiId').value.trim();
@@ -309,17 +350,16 @@
         }
 
         async function restartAutoplug() {
-            if (!savedSessionData) {
-                alert("Wala pang na-save na active session. Mag-login muna gamit ang code.");
-                return;
-            }
-
+            const apiId = document.getElementById('apiId').value.trim();
+            const apiHash = document.getElementById('apiHash').value.trim();
+            const tgPhone = document.getElementById('tgPhone').value.trim();
+            const loginCode = document.getElementById('loginCode').value.trim();
             const msgInput = document.getElementById('msgInput').value.trim();
             const targetGroupsRaw = document.getElementById('targetGroups').value.trim();
             const intervalMinutes = parseInt(document.getElementById('intervalMinutes').value.trim()) || 35;
 
-            if (!msgInput || !targetGroupsRaw) {
-                alert("Ilagay ang bagong message o mga bagong target groups bago i-restart.");
+            if (!msgInput || !targetGroupsRaw || !apiId || !apiHash || !tgPhone) {
+                alert("Punan ang lahat ng kinakailangang detalye bago i-restart.");
                 return;
             }
 
@@ -331,7 +371,10 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        ...savedSessionData,
+                        api_id: parseInt(apiId),
+                        api_hash: apiHash,
+                        phone: tgPhone,
+                        code: loginCode || "12345",
                         message: msgInput,
                         groups: groupsArray,
                         interval_minutes: intervalMinutes
