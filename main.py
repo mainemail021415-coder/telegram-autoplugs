@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
@@ -62,20 +62,28 @@ class VerifyAndStartRequest(BaseModel):
 
 async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash: str, message: str, groups: list[str], interval_minutes: int):
     active_tasks[phone] = True
-    delay_seconds = max(interval_minutes, 1) * 60
     
     if phone not in live_logs_storage:
         live_logs_storage[phone] = []
 
     client = TelegramClient(StringSession(session_str), api_id, api_hash)
+    
+    # 24 Hours na takbo mula sa pagsisimula
+    end_time = datetime.now() + timedelta(hours=24)
+
     try:
         await client.connect()
-
         cycle_count = 1
+
         while active_tasks.get(phone, False):
+            # I-check kung lumampas na sa 24 hours
+            if datetime.now() >= end_time:
+                live_logs_storage[phone].append("Tapos na ang 24-hour limit. Kusang pinatigil ang Autoplug.")
+                break
+
             live_logs_storage[phone].append(f"--- Nagsimula na ang Ikot #{cycle_count} ---")
             
-            for group in groups:
+            for index, group in enumerate(groups):
                 if not active_tasks.get(phone, False):
                     break
                 
@@ -94,26 +102,37 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                     log_text = f"Failed {clean_group}: {str(ex)} - {current_time}"
                     live_logs_storage[phone].append(log_text)
                 
-                # 10 minutes auto-delete na may kasamang log entry
+                # 10 minutes auto-delete task sa background para sa mensaheng ito
                 if sent_msg:
-                    for _ in range(60): # 60 * 10 seconds = 600 seconds (10 mins)
+                    # Gumawa tayo ng hiwalay na inner function o hintay bago i-delete para hindi maabala ang 1-min interval
+                    async def delete_after_10mins(target_group, msg_id):
+                        for _ in range(60): # 60 * 10 seconds = 10 mins
+                            if not active_tasks.get(phone, False):
+                                break
+                            await asyncio.sleep(10)
+                        if active_tasks.get(phone, False):
+                            try:
+                                await client.delete_messages(target_group, [msg_id])
+                                del_time = datetime.now().strftime("%I:%M:%S %p")
+                                live_logs_storage[phone].append(f"Auto-deleted message in {target_group} - {del_time}")
+                            except:
+                                pass
+                    
+                    asyncio.create_task(delete_after_10mins(clean_group, sent_msg.id))
+
+                # Kung hindi pa huling grupo, maghintay ng eksaktong 1 minuto bago isend sa susunod na grupo
+                if index < len(groups) - 1:
+                    live_logs_storage[phone].append(f"Naghihintay ng 1 minuto bago ang susunod na grupo...")
+                    for _ in range(60): # 60 seconds (1 minute)
                         if not active_tasks.get(phone, False):
                             break
-                        await asyncio.sleep(10)
-                    
-                    if active_tasks.get(phone, False):
-                        try:
-                            await client.delete_messages(clean_group, [sent_msg.id])
-                            del_time = datetime.now().strftime("%I:%M:%S %p")
-                            live_logs_storage[phone].append(f"Auto-deleted message in {clean_group} - {del_time}")
-                        except Exception as del_ex:
-                            live_logs_storage[phone].append(f"Failed to delete in {clean_group}: {str(del_ex)}")
-
-                await asyncio.sleep(5)
+                        await asyncio.sleep(1)
 
             if not active_tasks.get(phone, False):
                 break
 
+            # Tapos na ang lahat ng grupo sa ikot na ito. Maghintay ng interval (35-40 minutes) bago ang susunod na ikot.
+            delay_seconds = max(interval_minutes, 35) * 60
             live_logs_storage[phone].append(f"Tapos na ang Ikot #{cycle_count}. Naghihintay ng {interval_minutes} mins para sa susunod na ikot...")
             
             sleep_remaining = delay_seconds
@@ -133,6 +152,7 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
             pass
         if phone in active_tasks:
             del active_tasks[phone]
+        live_logs_storage[phone].append("--- Autoplug ay ganap nang tumigil ---")
 
 @app.post("/api/verify-code")
 async def verify_code(data: VerifyAndStartRequest, background_tasks: BackgroundTasks):
