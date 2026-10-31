@@ -67,8 +67,6 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
         live_logs_storage[phone] = []
 
     client = TelegramClient(StringSession(session_str), api_id, api_hash)
-    
-    # 24 Hours na takbo mula sa pagsisimula
     end_time = datetime.now() + timedelta(hours=24)
 
     try:
@@ -76,7 +74,6 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
         cycle_count = 1
 
         while active_tasks.get(phone, False):
-            # I-check kung lumampas na sa 24 hours
             if datetime.now() >= end_time:
                 live_logs_storage[phone].append("Tapos na ang 24-hour limit. Kusang pinatigil ang Autoplug.")
                 break
@@ -91,6 +88,19 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                 if not clean_group:
                     continue
                 
+                # --- AUTO-RECONNECT CHECK ---
+                try:
+                    if not client.is_connected():
+                        await client.connect()
+                except Exception as conn_ex:
+                    live_logs_storage[phone].append(f"Reconnecting warning: {str(conn_ex)}")
+                    await asyncio.sleep(5)
+                    try:
+                        await client.connect()
+                    except:
+                        pass
+                # ----------------------------
+
                 sent_msg = None
                 try:
                     sent_msg = await client.send_message(clean_group, message)
@@ -102,16 +112,17 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                     log_text = f"Failed {clean_group}: {str(ex)} - {current_time}"
                     live_logs_storage[phone].append(log_text)
                 
-                # 10 minutes auto-delete task sa background para sa mensaheng ito
+                # 10 minutes auto-delete task
                 if sent_msg:
-                    # Gumawa tayo ng hiwalay na inner function o hintay bago i-delete para hindi maabala ang 1-min interval
                     async def delete_after_10mins(target_group, msg_id):
-                        for _ in range(60): # 60 * 10 seconds = 10 mins
+                        for _ in range(60):
                             if not active_tasks.get(phone, False):
                                 break
                             await asyncio.sleep(10)
                         if active_tasks.get(phone, False):
                             try:
+                                if not client.is_connected():
+                                    await client.connect()
                                 await client.delete_messages(target_group, [msg_id])
                                 del_time = datetime.now().strftime("%I:%M:%S %p")
                                 live_logs_storage[phone].append(f"Auto-deleted message in {target_group} - {del_time}")
@@ -120,10 +131,10 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                     
                     asyncio.create_task(delete_after_10mins(clean_group, sent_msg.id))
 
-                # Kung hindi pa huling grupo, maghintay ng eksaktong 1 minuto bago isend sa susunod na grupo
+                # 1 minute delay bago ang susunod na grupo
                 if index < len(groups) - 1:
                     live_logs_storage[phone].append(f"Naghihintay ng 1 minuto bago ang susunod na grupo...")
-                    for _ in range(60): # 60 seconds (1 minute)
+                    for _ in range(60):
                         if not active_tasks.get(phone, False):
                             break
                         await asyncio.sleep(1)
@@ -131,7 +142,6 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
             if not active_tasks.get(phone, False):
                 break
 
-            # Tapos na ang lahat ng grupo sa ikot na ito. Maghintay ng interval (35-40 minutes) bago ang susunod na ikot.
             delay_seconds = max(interval_minutes, 35) * 60
             live_logs_storage[phone].append(f"Tapos na ang Ikot #{cycle_count}. Naghihintay ng {interval_minutes} mins para sa susunod na ikot...")
             
