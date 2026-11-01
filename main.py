@@ -88,7 +88,6 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                 if not clean_group:
                     continue
                 
-                # Seguraduhing active ang koneksyon bago mag-send
                 try:
                     if not client.is_connected():
                         await client.connect()
@@ -112,13 +111,11 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                     log_text = f"Failed {clean_group}: {err_str} - {current_time}"
                     live_logs_storage[phone].append(log_text)
                     
-                    # Kung sakaling nasira ang session, i-stop ang loop para hindi magpatuloy ang error
-                    if "AuthKeyUnregistered" in err_str or "Session" in err_str:
-                        live_logs_storage[phone].append("Na-invalidate ang session. Kailangan mag-login muli.")
+                    if "AuthKeyUnregistered" in err_str or "Session" in err_str or "Authorization" in err_str:
+                        live_logs_storage[phone].append("Na-invalidate ang session ng Telegram. Mangyaring mag-login muli.")
                         active_tasks[phone] = False
                         break
                 
-                # 10 minutes auto-delete task
                 if sent_msg:
                     async def delete_after_10mins(target_group, msg_id):
                         for _ in range(60):
@@ -137,7 +134,6 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                     
                     asyncio.create_task(delete_after_10mins(clean_group, sent_msg.id))
 
-                # 1 minute delay bago ang susunod na grupo
                 if index < len(groups) - 1:
                     live_logs_storage[phone].append(f"Naghihintay ng 1 minuto bago ang susunod na grupo...")
                     for _ in range(60):
