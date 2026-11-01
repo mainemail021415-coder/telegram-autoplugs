@@ -1,8 +1,9 @@
+import os
+import asyncio
+from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import asyncio
-from datetime import datetime, timedelta
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
@@ -16,49 +17,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-async def root():
-    return {"status": "online", "message": "Peony SMM Live Logs Autoplug Backend is running!"}
+# Kunin ang mga default credentials at permanent string session mula sa environment variables ng Render
+DEFAULT_API_ID = int(os.getenv("API_ID", 39718460))
+DEFAULT_API_HASH = os.getenv("API_HASH", "5443837869bbc53e4455f3fba89f0bb3")
+DEFAULT_STRING_SESSION = os.getenv("STRING_SESSION", "")
 
-active_clients = {}
 active_tasks = {}
 live_logs_storage = {}
 
-class SendCodeRequest(BaseModel):
-    api_id: int
-    api_hash: str
-    phone: str
+@app.get("/")
+async def root():
+    return {"status": "online", "message": "Peony SMM Live Logs Autoplug Backend is running securely with StringSession!"}
 
-@app.post("/api/send-code")
-async def send_code(data: SendCodeRequest):
-    try:
-        client = TelegramClient(StringSession(), data.api_id, data.api_hash)
-        await client.connect()
-        
-        result = await client.send_code_request(data.phone)
-        session_string = client.session.save()
-        
-        active_clients[data.phone] = {
-            "session": session_string,
-            "api_id": data.api_id,
-            "api_hash": data.api_hash,
-            "phone_code_hash": result.phone_code_hash
-        }
-        
-        await client.disconnect()
-        return {"status": "code_sent", "message": "Naipadala na ang Telegram login code sa iyong Telegram app!"}
-    
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-class VerifyAndStartRequest(BaseModel):
-    api_id: int
-    api_hash: str
+class StartAutoplugRequest(BaseModel):
     phone: str
-    code: str
     message: str
     groups: list[str]
     interval_minutes: int
+    api_id: int = DEFAULT_API_ID
+    api_hash: str = DEFAULT_API_HASH
 
 async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash: str, message: str, groups: list[str], interval_minutes: int):
     active_tasks[phone] = True
@@ -70,10 +47,9 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
     end_time = datetime.now() + timedelta(hours=24)
 
     try:
-        # Isang beses lang mag-connect sa simula at panatilihing bukas
         await client.connect()
         if not await client.is_user_authorized():
-            live_logs_storage[phone].append("Error: Hindi awtorisado ang session string. Mag-login muli.")
+            live_logs_storage[phone].append("Error: Hindi awtorisado ang STRING_SESSION. Paki-suri ang environment variable sa Render.")
             active_tasks[phone] = False
             return
 
@@ -94,7 +70,6 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                 if not clean_group:
                     continue
                 
-                # Siguraduhing konektado bago mag-send
                 try:
                     if not client.is_connected():
                         await client.connect()
@@ -118,7 +93,7 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                     live_logs_storage[phone].append(log_text)
                     
                     if "AuthKeyUnregistered" in err_str or "Session" in err_str or "Authorization" in err_str:
-                        live_logs_storage[phone].append("Na-invalidate ang session ng Telegram. Mangyaring mag-login muli.")
+                        live_logs_storage[phone].append("Na-invalidate ang session. Suriin ang STRING_SESSION.")
                         active_tasks[phone] = False
                         break
                 
@@ -172,40 +147,29 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
             del active_tasks[phone]
         live_logs_storage[phone].append("--- Autoplug ay ganap nang tumigil ---")
 
-@app.post("/api/verify-code")
-async def verify_code(data: VerifyAndStartRequest, background_tasks: BackgroundTasks):
-    client_data = active_clients.get(data.phone)
-    if not client_data:
-        raise HTTPException(status_code=400, detail="Mag-request muna ng code bago mag-verify.")
+@app.post("/api/start-autoplug")
+async def start_autoplug(data: StartAutoplugRequest, background_tasks: BackgroundTasks):
+    session_str = DEFAULT_STRING_SESSION
+    if not session_str:
+        raise HTTPException(status_code=400, detail="Walang nakitang STRING_SESSION sa Render environment variables.")
 
-    try:
-        client = TelegramClient(StringSession(client_data["session"]), data.api_id, data.api_hash)
-        await client.connect()
-        
-        await client.sign_in(data.phone, data.code, phone_code_hash=client_data["phone_code_hash"])
-        session_str = client.session.save()
-        await client.disconnect()
+    active_tasks[data.phone] = False
+    await asyncio.sleep(1)
+    
+    live_logs_storage[data.phone] = [f"Nagsimula na ang 24H Autoplug loop gamit ang StringSession (Interval: {data.interval_minutes} mins)."]
 
-        active_tasks[data.phone] = False
-        await asyncio.sleep(1)
-        
-        live_logs_storage[data.phone] = [f"Nagsimula na ang 24H Autoplug loop (Interval: {data.interval_minutes} mins)."]
+    background_tasks.add_task(
+        run_autoplug_loop,
+        data.phone,
+        session_str,
+        data.api_id,
+        data.api_hash,
+        data.message,
+        data.groups,
+        data.interval_minutes
+    )
 
-        background_tasks.add_task(
-            run_autoplug_loop,
-            data.phone,
-            session_str,
-            data.api_id,
-            data.api_hash,
-            data.message,
-            data.groups,
-            data.interval_minutes
-        )
-
-        return {"status": "success", "message": "Nagsimula na ang autoplug!"}
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    return {"status": "success", "message": "Nagsimula na ang autoplug nang diretso gamit ang permanent session!"}
 
 class LogsRequest(BaseModel):
     phone: str
