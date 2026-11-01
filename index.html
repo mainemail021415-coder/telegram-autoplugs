@@ -7,8 +7,8 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
+            background-color: #fff1f2; /* Pastel pink background */
+            color: #4c0519;
             margin: 0;
             padding: 20px;
             display: flex;
@@ -17,37 +17,54 @@
             min-height: 100vh;
         }
         .container {
-            background-color: #1e293b;
+            background-color: #ffffff;
             padding: 25px;
-            border-radius: 12px;
+            border-radius: 16px;
             width: 100%;
             max-width: 400px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 25px rgba(244, 63, 94, 0.15);
+            border: 1px solid #fecdd3;
         }
-        h2 { text-align: center; color: #38bdf8; }
+        h2 { 
+            text-align: center; 
+            color: #e11d48; 
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            font-size: 12px; 
+            color: #9f1239; 
+            text-align: center; 
+            margin-bottom: 20px;
+        }
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-size: 14px; }
+        label { display: block; margin-bottom: 5px; font-size: 14px; font-weight: bold; color: #881337; }
         input, textarea {
             width: 100%;
             padding: 10px;
-            border: 1px solid #475569;
-            background-color: #0f172a;
-            color: #fff;
-            border-radius: 6px;
+            border: 1px solid #fda4af;
+            background-color: #fffbfe;
+            color: #4c0519;
+            border-radius: 8px;
             box-sizing: border-box;
+            outline: none;
+        }
+        input:focus, textarea:focus {
+            border-color: #e11d48;
+            box-shadow: 0 0 5px rgba(225, 29, 72, 0.2);
         }
         textarea { resize: vertical; height: 80px; }
         button {
             width: 100%;
             padding: 12px;
-            background: linear-gradient(135deg, #0ea5e9, #2563eb);
+            background: linear-gradient(135deg, #fb7185, #e11d48);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
             margin-top: 10px;
+            transition: opacity 0.2s;
         }
         button:hover { opacity: 0.9; }
         #statusMessage {
@@ -61,8 +78,8 @@
 <body>
 
 <div class="container">
-    <h2>Autoplug Control Panel</h2>
-    <p style="font-size: 12px; color: #94a3b8; text-align: center;">Gamit ang Permanent String Session sa Render</p>
+    <h2>Peony Autoplug</h2>
+    <div class="subtitle">🔒 Secure String Session Control Panel</div>
     
     <div class="form-group">
         <label>Phone Number (May kasamang +63):</label>
@@ -98,14 +115,14 @@ async function startAutoplug() {
     const statusDiv = document.getElementById('statusMessage');
 
     if (!phone || !message || !groupsRaw) {
-        statusDiv.style.color = '#f87171';
+        statusDiv.style.color = '#e11d48';
         statusDiv.innerText = 'Mangyaring punan ang lahat ng kinakailangang impormasyon.';
         return;
     }
 
     const groups = groupsRaw.split('\n').filter(g => g.trim() !== '');
 
-    statusDiv.style.color = '#38bdf8';
+    statusDiv.style.color = '#9f1239';
     statusDiv.innerText = 'Nagsisimulang kumonekta sa Render server...';
 
     try {
@@ -125,14 +142,14 @@ async function startAutoplug() {
         const data = await response.json();
         
         if (response.ok) {
-            statusDiv.style.color = '#4ade80';
+            statusDiv.style.color = '#047857';
             statusDiv.innerText = data.message || 'Matagumpay na nagsimula ang autoplug!';
         } else {
-            statusDiv.style.color = '#f87171';
+            statusDiv.style.color = '#e11d48';
             statusDiv.innerText = 'Error: ' + (data.detail || 'Hindi na-proseso ang hiling.');
         }
     } catch (err) {
-        statusDiv.style.color = '#f87171';
+        statusDiv.style.color = '#e11d48';
         statusDiv.innerText = 'May problema sa koneksyon sa server: ' + err.message;
     }
 }
