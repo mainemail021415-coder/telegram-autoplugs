@@ -70,7 +70,13 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
     end_time = datetime.now() + timedelta(hours=24)
 
     try:
+        # Isang beses lang mag-connect sa simula at panatilihing bukas
         await client.connect()
+        if not await client.is_user_authorized():
+            live_logs_storage[phone].append("Error: Hindi awtorisado ang session string. Mag-login muli.")
+            active_tasks[phone] = False
+            return
+
         cycle_count = 1
 
         while active_tasks.get(phone, False):
@@ -88,12 +94,12 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                 if not clean_group:
                     continue
                 
+                # Siguraduhing konektado bago mag-send
                 try:
                     if not client.is_connected():
                         await client.connect()
-                except Exception as conn_ex:
-                    live_logs_storage[phone].append(f"Reconnecting warning: {str(conn_ex)}")
-                    await asyncio.sleep(3)
+                except Exception:
+                    await asyncio.sleep(2)
                     try:
                         await client.connect()
                     except:
@@ -124,11 +130,10 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                             await asyncio.sleep(10)
                         if active_tasks.get(phone, False):
                             try:
-                                if not client.is_connected():
-                                    await client.connect()
-                                await client.delete_messages(target_group, [msg_id])
-                                del_time = datetime.now().strftime("%I:%M:%S %p")
-                                live_logs_storage[phone].append(f"Auto-deleted message in {target_group} - {del_time}")
+                                if client.is_connected():
+                                    await client.delete_messages(target_group, [msg_id])
+                                    del_time = datetime.now().strftime("%I:%M:%S %p")
+                                    live_logs_storage[phone].append(f"Auto-deleted message in {target_group} - {del_time}")
                             except:
                                 pass
                     
@@ -159,7 +164,8 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
         live_logs_storage[phone].append(f"Loop Error: {str(e)}")
     finally:
         try:
-            await client.disconnect()
+            if client.is_connected():
+                await client.disconnect()
         except:
             pass
         if phone in active_tasks:
