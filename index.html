@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #fff1f2; /* Pastel pink background */
+            background-color: #fff1f2;
             color: #4c0519;
             margin: 0;
             padding: 20px;
@@ -21,7 +21,7 @@
             padding: 25px;
             border-radius: 16px;
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
             box-shadow: 0 8px 25px rgba(244, 63, 94, 0.15);
             border: 1px solid #fecdd3;
         }
@@ -52,7 +52,7 @@
             border-color: #e11d48;
             box-shadow: 0 0 5px rgba(225, 29, 72, 0.2);
         }
-        textarea { resize: vertical; height: 80px; }
+        textarea { resize: vertical; height: 70px; }
         button {
             width: 100%;
             padding: 12px;
@@ -63,15 +63,31 @@
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            margin-top: 10px;
+            margin-top: 5px;
             transition: opacity 0.2s;
         }
         button:hover { opacity: 0.9; }
         #statusMessage {
-            margin-top: 15px;
+            margin-top: 10px;
             text-align: center;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
+        }
+        .logs-container {
+            margin-top: 20px;
+        }
+        .logs-box {
+            background-color: #1e1b4b;
+            color: #38bdf8;
+            font-family: monospace;
+            font-size: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            height: 150px;
+            overflow-y: auto;
+            border: 1px solid #fda4af;
+            white-space: pre-wrap;
+            word-break: break-all;
         }
     </style>
 </head>
@@ -102,11 +118,17 @@
     </div>
 
     <button onclick="startAutoplug()">Simulan ang Autoplug</button>
-    
     <div id="statusMessage"></div>
+
+    <div class="logs-container">
+        <label>Live Activity Logs:</label>
+        <div id="logsBox" class="logs-box">Naghihintay na magsimula ang autoplug...</div>
+    </div>
 </div>
 
 <script>
+let logInterval = null;
+
 async function startAutoplug() {
     const phone = document.getElementById('phoneInput').value.trim();
     const message = document.getElementById('msgInput').value.trim();
@@ -144,6 +166,10 @@ async function startAutoplug() {
         if (response.ok) {
             statusDiv.style.color = '#047857';
             statusDiv.innerText = data.message || 'Matagumpay na nagsimula ang autoplug!';
+            
+            // Simulan ang awtomatikong pagkuha ng logs kada 3 segundo
+            if (logInterval) clearInterval(logInterval);
+            logInterval = setInterval(() => fetchLogs(phone), 3000);
         } else {
             statusDiv.style.color = '#e11d48';
             statusDiv.innerText = 'Error: ' + (data.detail || 'Hindi na-proseso ang hiling.');
@@ -151,6 +177,27 @@ async function startAutoplug() {
     } catch (err) {
         statusDiv.style.color = '#e11d48';
         statusDiv.innerText = 'May problema sa koneksyon sa server: ' + err.message;
+    }
+}
+
+async function fetchLogs(phone) {
+    try {
+        const response = await fetch('https://telegram-autoplugs.onrender.com/api/get-logs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ phone: phone })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.logs) {
+            const logsBox = document.getElementById('logsBox');
+            logsBox.innerText = data.logs.join('\n');
+            logsBox.scrollTop = logsBox.scrollHeight; // Auto-scroll pababa sa pinakabagong log
+        }
+    } catch (err) {
+        console.error("Hindi makuha ang logs:", err);
     }
 }
 </script>
