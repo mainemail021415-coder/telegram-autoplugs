@@ -22,14 +22,18 @@ DEFAULT_API_ID = int(os.getenv("API_ID", 39718460))
 DEFAULT_API_HASH = os.getenv("API_HASH", "5443837869bbc53e4455f3fba89f0bb3")
 DEFAULT_STRING_SESSION = os.getenv("STRING_SESSION", "")
 
+# Opisyal na balidong Client Keycodes para sa Peony SMM Autoplug
+VALID_KEYCODES = {"021415", "2001415"}
+
 active_tasks = {}
 live_logs_storage = {}
 
 @app.get("/")
 async def root():
-    return {"status": "online", "message": "Peony SMM Live Logs Autoplug Backend is running securely with StringSession!"}
+    return {"status": "online", "message": "Peony SMM Live Logs Autoplug Backend is running securely with StringSession & Keycode Verification!"}
 
 class StartAutoplugRequest(BaseModel):
+    keycode: str
     phone: str
     message: str
     groups: list[str]
@@ -149,6 +153,10 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
 
 @app.post("/api/start-autoplug")
 async def start_autoplug(data: StartAutoplugRequest, background_tasks: BackgroundTasks):
+    # Suriin kung valid ang inilagay na Keycode
+    if data.keycode not in VALID_KEYCODES:
+        raise HTTPException(status_code=400, detail="Invalid o expired na ang Client Keycode!")
+
     session_str = DEFAULT_STRING_SESSION
     if not session_str:
         raise HTTPException(status_code=400, detail="Walang nakitang STRING_SESSION sa Render environment variables.")
@@ -156,7 +164,7 @@ async def start_autoplug(data: StartAutoplugRequest, background_tasks: Backgroun
     active_tasks[data.phone] = False
     await asyncio.sleep(1)
     
-    live_logs_storage[data.phone] = [f"Nagsimula na ang 24H Autoplug loop gamit ang StringSession (Interval: {data.interval_minutes} mins)."]
+    live_logs_storage[data.phone] = [f"Nagsimula na ang 24H Autoplug loop gamit ang StringSession at Keycode (Interval: {data.interval_minutes} mins)."]
 
     background_tasks.add_task(
         run_autoplug_loop,
@@ -169,7 +177,7 @@ async def start_autoplug(data: StartAutoplugRequest, background_tasks: Backgroun
         data.interval_minutes
     )
 
-    return {"status": "success", "message": "Nagsimula na ang autoplug nang diretso gamit ang permanent session!"}
+    return {"status": "success", "message": "Matagumpay na na-verify ang Keycode! Nagsimula na ang autoplug."}
 
 class LogsRequest(BaseModel):
     phone: str
