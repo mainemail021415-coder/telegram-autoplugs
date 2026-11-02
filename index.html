@@ -110,13 +110,18 @@
 
 <div class="container">
     <h2>Peony Autoplug</h2>
-    <div class="subtitle">🔒 Secure String Session Control Panel</div>
+    <div class="subtitle">🔒 Secure Dynamic StringSession Control Panel</div>
     
     <!-- Form Container (Nawawala kapag may active plug) -->
     <div id="formContainer">
         <div class="form-group">
             <label>Client Keycode:</label>
             <input type="text" id="keycodeInput" placeholder="Ilagay ang iyong keycode..." />
+        </div>
+
+        <div class="form-group">
+            <label>Telegram String Session:</label>
+            <textarea id="stringSessionInput" placeholder="I-paste dito ang permanent string session..." style="height: 80px;"></textarea>
         </div>
 
         <div class="form-group">
@@ -161,7 +166,6 @@
 let logInterval = null;
 let countdownInterval = null;
 
-// Pag-load ng pahina, i-check kung may kasalukuyang active 24-hour session
 document.addEventListener("DOMContentLoaded", () => {
     checkActiveSession();
 });
@@ -175,18 +179,15 @@ function checkActiveSession() {
         const timeLeft = savedEndTime - now;
 
         if (timeLeft > 0) {
-            // Itago ang form, ipakita ang countdown timer
             document.getElementById('formContainer').style.display = 'none';
             document.getElementById('countdownContainer').style.display = 'block';
             startLiveCountdown(timeLeft);
 
-            // Ipagpatuloy ang pagkuha ng logs
             if (savedPhone) {
                 if (logInterval) clearInterval(logInterval);
                 logInterval = setInterval(() => fetchLogs(savedPhone), 3000);
             }
         } else {
-            // Kung lumipas na ang 24 hours, i-reset pabalik sa form
             resetSession();
         }
     }
@@ -194,15 +195,16 @@ function checkActiveSession() {
 
 async function startAutoplug() {
     const keycode = document.getElementById('keycodeInput').value.trim();
+    const string_session = document.getElementById('stringSessionInput').value.trim();
     const phone = document.getElementById('phoneInput').value.trim();
     const message = document.getElementById('msgInput').value.trim();
     const groupsRaw = document.getElementById('groupsInput').value;
     const interval_minutes = parseInt(document.getElementById('intervalInput').value);
     const statusDiv = document.getElementById('statusMessage');
 
-    if (!keycode || !phone || !message || !groupsRaw) {
+    if (!keycode || !string_session || !phone || !message || !groupsRaw) {
         statusDiv.style.color = '#e11d48';
-        statusDiv.innerText = 'Mangyaring punan ang Keycode at lahat ng kinakailangang impormasyon.';
+        statusDiv.innerText = 'Mangyaring punan ang Keycode, String Session, at lahat ng impormasyon.';
         return;
     }
 
@@ -219,6 +221,7 @@ async function startAutoplug() {
             },
             body: JSON.stringify({
                 keycode: keycode,
+                string_session: string_session,
                 phone: phone,
                 message: message,
                 groups: groups,
@@ -232,20 +235,16 @@ async function startAutoplug() {
             statusDiv.style.color = '#047857';
             statusDiv.innerText = data.message || 'Matagumpay na nagsimula ang autoplug!';
             
-            // Magtakda ng eksaktong 24 oras (24 * 60 * 60 * 1000 ms)
             const durationMs = 24 * 60 * 60 * 1000;
             const endTime = new Date().getTime() + durationMs;
 
-            // I-save sa localStorage para maging persistent kahit i-refresh
             localStorage.setItem("autoplug_end_time", endTime);
             localStorage.setItem("autoplug_phone", phone);
 
-            // Palitan ang view patungong countdown
             document.getElementById('formContainer').style.display = 'none';
             document.getElementById('countdownContainer').style.display = 'block';
             startLiveCountdown(durationMs);
 
-            // Simulan ang awtomatikong pagkuha ng logs kada 3 segundo
             if (logInterval) clearInterval(logInterval);
             logInterval = setInterval(() => fetchLogs(phone), 3000);
         } else {
@@ -291,14 +290,13 @@ function resetSession() {
     if (logInterval) clearInterval(logInterval);
     if (countdownInterval) clearInterval(countdownInterval);
 
-    // Ibalik ang form para sa bagong client/session
     document.getElementById('countdownContainer').style.display = 'none';
     document.getElementById('formContainer').style.display = 'block';
     document.getElementById('statusMessage').innerText = '';
     document.getElementById('logsBox').innerText = 'Naghihintay na magsimula ang autoplug...';
     
-    // I-clear ang mga input
     document.getElementById('keycodeInput').value = '';
+    document.getElementById('stringSessionInput').value = '';
     document.getElementById('msgInput').value = '';
     document.getElementById('groupsInput').value = '';
 }
