@@ -89,6 +89,21 @@
             white-space: pre-wrap;
             word-break: break-all;
         }
+        .countdown-box {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: #fff0f5;
+            border-radius: 12px;
+            border: 2px dashed #fda4af;
+            margin-top: 15px;
+        }
+        .countdown-timer {
+            font-size: 2rem;
+            color: #e11d48;
+            font-weight: bold;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -97,28 +112,44 @@
     <h2>Peony Autoplug</h2>
     <div class="subtitle">🔒 Secure String Session Control Panel</div>
     
-    <div class="form-group">
-        <label>Phone Number (May kasamang +63):</label>
-        <input type="text" id="phoneInput" placeholder="+639..." value="+63" />
+    <!-- Form Container (Nawawala kapag may active plug) -->
+    <div id="formContainer">
+        <div class="form-group">
+            <label>Client Keycode:</label>
+            <input type="text" id="keycodeInput" placeholder="Ilagay ang iyong keycode..." />
+        </div>
+
+        <div class="form-group">
+            <label>Phone Number (May kasamang +63):</label>
+            <input type="text" id="phoneInput" placeholder="+639..." value="+63" />
+        </div>
+
+        <div class="form-group">
+            <label>Mensahe para sa Autoplug:</label>
+            <textarea id="msgInput" placeholder="Ilagay ang mensahe dito..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Mga Grupo (Isang username/link kada linya):</label>
+            <textarea id="groupsInput" placeholder="@group1&#10;@group2"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Interval (Minuto kada ikot):</label>
+            <input type="number" id="intervalInput" value="35" />
+        </div>
+
+        <button onclick="startAutoplug()">Simulan ang Autoplug</button>
+        <div id="statusMessage"></div>
     </div>
 
-    <div class="form-group">
-        <label>Mensahe para sa Autoplug:</label>
-        <textarea id="msgInput" placeholder="Ilagay ang mensahe dito..."></textarea>
+    <!-- 24-Hour Countdown Container (Lilitaw habang aktibo ang 24 hours) -->
+    <div id="countdownContainer" class="countdown-box">
+        <h3 style="color: #e11d48; margin-top: 0;">Aktibo ang 24-Oras na Plug!</h3>
+        <p style="font-size: 13px; color: #881337; margin-bottom: 5px;">Natitirang oras bago mag-tapos:</p>
+        <div id="timerDisplay" class="countdown-timer">24:00:00</div>
+        <p style="font-size: 11px; color: #9f1239;">Huwag isara o i-clear ang site; tumatakbo nang tuloy-tuloy ang autoplug.</p>
     </div>
-
-    <div class="form-group">
-        <label>Mga Grupo (Isang username/link kada linya):</label>
-        <textarea id="groupsInput" placeholder="@group1&#10;@group2"></textarea>
-    </div>
-
-    <div class="form-group">
-        <label>Interval (Minuto kada ikot):</label>
-        <input type="number" id="intervalInput" value="35" />
-    </div>
-
-    <button onclick="startAutoplug()">Simulan ang Autoplug</button>
-    <div id="statusMessage"></div>
 
     <div class="logs-container">
         <label>Live Activity Logs:</label>
@@ -128,17 +159,50 @@
 
 <script>
 let logInterval = null;
+let countdownInterval = null;
+
+// Pag-load ng pahina, i-check kung may kasalukuyang active 24-hour session
+document.addEventListener("DOMContentLoaded", () => {
+    checkActiveSession();
+});
+
+function checkActiveSession() {
+    const savedEndTime = localStorage.getItem("autoplug_end_time");
+    const savedPhone = localStorage.getItem("autoplug_phone");
+
+    if (savedEndTime) {
+        const now = new Date().getTime();
+        const timeLeft = savedEndTime - now;
+
+        if (timeLeft > 0) {
+            // Itago ang form, ipakita ang countdown timer
+            document.getElementById('formContainer').style.display = 'none';
+            document.getElementById('countdownContainer').style.display = 'block';
+            startLiveCountdown(timeLeft);
+
+            // Ipagpatuloy ang pagkuha ng logs
+            if (savedPhone) {
+                if (logInterval) clearInterval(logInterval);
+                logInterval = setInterval(() => fetchLogs(savedPhone), 3000);
+            }
+        } else {
+            // Kung lumipas na ang 24 hours, i-reset pabalik sa form
+            resetSession();
+        }
+    }
+}
 
 async function startAutoplug() {
+    const keycode = document.getElementById('keycodeInput').value.trim();
     const phone = document.getElementById('phoneInput').value.trim();
     const message = document.getElementById('msgInput').value.trim();
     const groupsRaw = document.getElementById('groupsInput').value;
     const interval_minutes = parseInt(document.getElementById('intervalInput').value);
     const statusDiv = document.getElementById('statusMessage');
 
-    if (!phone || !message || !groupsRaw) {
+    if (!keycode || !phone || !message || !groupsRaw) {
         statusDiv.style.color = '#e11d48';
-        statusDiv.innerText = 'Mangyaring punan ang lahat ng kinakailangang impormasyon.';
+        statusDiv.innerText = 'Mangyaring punan ang Keycode at lahat ng kinakailangang impormasyon.';
         return;
     }
 
@@ -154,6 +218,7 @@ async function startAutoplug() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
+                keycode: keycode,
                 phone: phone,
                 message: message,
                 groups: groups,
@@ -167,6 +232,19 @@ async function startAutoplug() {
             statusDiv.style.color = '#047857';
             statusDiv.innerText = data.message || 'Matagumpay na nagsimula ang autoplug!';
             
+            // Magtakda ng eksaktong 24 oras (24 * 60 * 60 * 1000 ms)
+            const durationMs = 24 * 60 * 60 * 1000;
+            const endTime = new Date().getTime() + durationMs;
+
+            // I-save sa localStorage para maging persistent kahit i-refresh
+            localStorage.setItem("autoplug_end_time", endTime);
+            localStorage.setItem("autoplug_phone", phone);
+
+            // Palitan ang view patungong countdown
+            document.getElementById('formContainer').style.display = 'none';
+            document.getElementById('countdownContainer').style.display = 'block';
+            startLiveCountdown(durationMs);
+
             // Simulan ang awtomatikong pagkuha ng logs kada 3 segundo
             if (logInterval) clearInterval(logInterval);
             logInterval = setInterval(() => fetchLogs(phone), 3000);
@@ -178,6 +256,51 @@ async function startAutoplug() {
         statusDiv.style.color = '#e11d48';
         statusDiv.innerText = 'May problema sa koneksyon sa server: ' + err.message;
     }
+}
+
+function startLiveCountdown(durationMs) {
+    const endTime = new Date().getTime() + durationMs;
+
+    if (countdownInterval) clearInterval(countdownInterval);
+
+    countdownInterval = setInterval(() => {
+        const now = new Date().getTime();
+        const timeLeft = endTime - now;
+
+        if (timeLeft <= 0) {
+            clearInterval(countdownInterval);
+            resetSession();
+            alert("Natapos na ang 24-oras na autoplug session!");
+            return;
+        }
+
+        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+        document.getElementById('timerDisplay').textContent = 
+            String(hours).padStart(2, '0') + ":" +
+            String(minutes).padStart(2, '0') + ":" +
+            String(seconds).padStart(2, '0');
+    }, 1000);
+}
+
+function resetSession() {
+    localStorage.removeItem("autoplug_end_time");
+    localStorage.removeItem("autoplug_phone");
+    if (logInterval) clearInterval(logInterval);
+    if (countdownInterval) clearInterval(countdownInterval);
+
+    // Ibalik ang form para sa bagong client/session
+    document.getElementById('countdownContainer').style.display = 'none';
+    document.getElementById('formContainer').style.display = 'block';
+    document.getElementById('statusMessage').innerText = '';
+    document.getElementById('logsBox').innerText = 'Naghihintay na magsimula ang autoplug...';
+    
+    // I-clear ang mga input
+    document.getElementById('keycodeInput').value = '';
+    document.getElementById('msgInput').value = '';
+    document.getElementById('groupsInput').value = '';
 }
 
 async function fetchLogs(phone) {
@@ -194,7 +317,7 @@ async function fetchLogs(phone) {
         if (response.ok && data.logs) {
             const logsBox = document.getElementById('logsBox');
             logsBox.innerText = data.logs.join('\n');
-            logsBox.scrollTop = logsBox.scrollHeight; // Auto-scroll pababa sa pinakabagong log
+            logsBox.scrollTop = logsBox.scrollHeight;
         }
     } catch (err) {
         console.error("Hindi makuha ang logs:", err);
