@@ -17,12 +17,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Kunin ang mga default credentials at permanent string session mula sa environment variables ng Render
 DEFAULT_API_ID = int(os.getenv("API_ID", 39718460))
 DEFAULT_API_HASH = os.getenv("API_HASH", "5443837869bbc53e4455f3fba89f0bb3")
-DEFAULT_STRING_SESSION = os.getenv("STRING_SESSION", "")
 
-# Opisyal na balidong Client Keycodes para sa Peony SMM Autoplug
+# Opisyal na mga Client Keycode
 VALID_KEYCODES = {"021415", "2001415"}
 
 active_tasks = {}
@@ -30,10 +28,11 @@ live_logs_storage = {}
 
 @app.get("/")
 async def root():
-    return {"status": "online", "message": "Peony SMM Live Logs Autoplug Backend is running securely with StringSession & Keycode Verification!"}
+    return {"status": "online", "message": "Peony SMM Dynamic StringSession Autoplug Backend is running!"}
 
 class StartAutoplugRequest(BaseModel):
     keycode: str
+    string_session: str
     phone: str
     message: str
     groups: list[str]
@@ -53,7 +52,7 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
     try:
         await client.connect()
         if not await client.is_user_authorized():
-            live_logs_storage[phone].append("Error: Hindi awtorisado ang STRING_SESSION. Paki-suri ang environment variable sa Render.")
+            live_logs_storage[phone].append("Error: Hindi awtorisado o mali ang ibinigay na String Session.")
             active_tasks[phone] = False
             return
 
@@ -97,7 +96,7 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                     live_logs_storage[phone].append(log_text)
                     
                     if "AuthKeyUnregistered" in err_str or "Session" in err_str or "Authorization" in err_str:
-                        live_logs_storage[phone].append("Na-invalidate ang session. Suriin ang STRING_SESSION.")
+                        live_logs_storage[phone].append("Na-invalidate ang session.")
                         active_tasks[phone] = False
                         break
                 
@@ -153,23 +152,23 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
 
 @app.post("/api/start-autoplug")
 async def start_autoplug(data: StartAutoplugRequest, background_tasks: BackgroundTasks):
-    # Suriin kung valid ang inilagay na Keycode
+    # 1. Suriin ang Keycode
     if data.keycode not in VALID_KEYCODES:
         raise HTTPException(status_code=400, detail="Invalid o expired na ang Client Keycode!")
 
-    session_str = DEFAULT_STRING_SESSION
-    if not session_str:
-        raise HTTPException(status_code=400, detail="Walang nakitang STRING_SESSION sa Render environment variables.")
+    # 2. Suriin kung naglagay ng string session ang kliyente
+    if not data.string_session.strip():
+        raise HTTPException(status_code=400, detail="Kailangan mong ilagay ang iyong Telegram String Session!")
 
     active_tasks[data.phone] = False
     await asyncio.sleep(1)
     
-    live_logs_storage[data.phone] = [f"Nagsimula na ang 24H Autoplug loop gamit ang StringSession at Keycode (Interval: {data.interval_minutes} mins)."]
+    live_logs_storage[data.phone] = [f"Nagsimula na ang 24H Autoplug gamit ang client-provided StringSession (Interval: {data.interval_minutes} mins)."]
 
     background_tasks.add_task(
         run_autoplug_loop,
         data.phone,
-        session_str,
+        data.string_session,
         data.api_id,
         data.api_hash,
         data.message,
@@ -177,7 +176,7 @@ async def start_autoplug(data: StartAutoplugRequest, background_tasks: Backgroun
         data.interval_minutes
     )
 
-    return {"status": "success", "message": "Matagumpay na na-verify ang Keycode! Nagsimula na ang autoplug."}
+    return {"status": "success", "message": "Matagumpay na na-verify ang Keycode at Session! Nagsimula na ang autoplug."}
 
 class LogsRequest(BaseModel):
     phone: str
