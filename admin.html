@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peony Admin Control Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-pink-50 min-h-screen p-6">
+    <div class="max-w-2xl mx-auto bg-white p-6 rounded-2xl shadow-xl">
+        <h1 class="text-2xl font-bold text-pink-600 mb-4">👑 Peony Admin Control Panel</h1>
+        
+        <div id="login-section" class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Admin Keycode</label>
+            <div class="flex gap-2">
+                <input type="password" id="admin-key" class="w-full p-3 border rounded-xl" placeholder="Ilagay ang Admin Key">
+                <button onclick="loadActiveTasks()" class="bg-pink-600 text-white px-6 py-3 rounded-xl font-bold">Login</button>
+            </div>
+        </div>
+
+        <div id="dashboard-section" class="hidden">
+            <h2 class="text-lg font-semibold text-gray-800 mb-3">Mga Kasalukuyang Nagsasalang (Active Plugs)</h2>
+            <div id="users-list" class="space-y-3">
+                <!-- Dito papasok ang listahan -->
+            </div>
+            <button onclick="loadActiveTasks()" class="mt-4 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm">Refresh List</button>
+        </div>
+    </div>
+
+    <script>
+        // Nakalagay na ang iyong Render Backend URL dito
+        const BACKEND_URL = "https://telegram-autoplugs.onrender.com"; 
+
+        async function loadActiveTasks() {
+            const key = document.getElementById('admin-key').value;
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/admin/active-tasks?admin_key=${key}`);
+                const data = await res.json();
+                
+                if(data.status === 'success') {
+                    document.getElementById('login-section').classList.add('hidden');
+                    document.getElementById('dashboard-section').classList.remove('hidden');
+                    
+                    const listDiv = document.getElementById('users-list');
+                    listDiv.innerHTML = '';
+                    
+                    if(data.active_users.length === 0) {
+                        listDiv.innerHTML = '<p class="text-gray-500">Walang kasalukuyang aktibong plug.</p>';
+                        return;
+                    }
+
+                    data.active_users.forEach(user => {
+                        listDiv.innerHTML += `
+                            <div class="flex justify-between items-center p-4 bg-gray-50 rounded-xl border">
+                                <div>
+                                    <p class="font-bold text-gray-800">Phone/ID: ${user.phone}</p>
+                                    <span class="text-xs text-green-600 font-semibold">● Tumatakbo</span>
+                                </div>
+                                <button onclick="stopUser('${user.phone}', '${key}')" class="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-bold">Force Stop</button>
+                            </div>
+                        `;
+                    });
+                } else {
+                    alert('Mali ang Admin Key!');
+                }
+            } catch (e) {
+                alert('May error sa pagkonekta sa server.');
+            }
+        }
+
+        async function stopUser(phone, key) {
+            if(!confirm(`Sigurado ka bang gusto mong itigil ang plug ng ${phone}?`)) return;
+            
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/admin/stop-user`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ admin_key: key, phone: phone })
+                });
+                const data = await res.json();
+                alert(data.message);
+                loadActiveTasks();
+            } catch (e) {
+                alert('Hindi napagtagumpayang itigil ang task.');
+            }
+        }
+    </script>
+</body>
+</html>
