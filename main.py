@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from telethon import TelegramClient
 from telethon.sessions import StringSession
+from telethon.errors import FloodWaitError
 
 app = FastAPI()
 
@@ -20,7 +21,6 @@ app.add_middleware(
 DEFAULT_API_ID = int(os.getenv("API_ID", 39718460))
 DEFAULT_API_HASH = os.getenv("API_HASH", "5443837869bbc53e4455f3fba89f0bb3")
 
-# Opisyal na mga Client Keycode
 VALID_KEYCODES = {"021415", "2001415"}
 
 active_tasks = {}
@@ -77,7 +77,7 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                     if not client.is_connected():
                         await client.connect()
                 except Exception:
-                    await asyncio.sleep(2)
+                    await asyncio.sleep(3)
                     try:
                         await client.connect()
                     except:
@@ -87,13 +87,20 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                 try:
                     sent_msg = await client.send_message(clean_group, message)
                     current_time = datetime.now().strftime("%I:%M:%S %p")
-                    log_text = f"Successfully sent to {clean_group} (Ikot #{cycle_count}) - {current_time}"
-                    live_logs_storage[phone].append(log_text)
+                    live_logs_storage[phone].append(f"Successfully sent to {clean_group} (Ikot #{cycle_count}) - {current_time}")
+                except FloodWaitError as e:
+                    current_time = datetime.now().strftime("%I:%M:%S %p")
+                    live_logs_storage[phone].append(f"FloodWait: Kailangan maghintay ng {e.seconds} segundo sa {clean_group} - {current_time}")
+                    await asyncio.sleep(e.seconds)
+                    try:
+                        sent_msg = await client.send_message(clean_group, message)
+                        live_logs_storage[phone].append(f"Successfully sent to {clean_group} pagkatapos mag-antay (Ikot #{cycle_count})")
+                    except Exception as ex2:
+                        live_logs_storage[phone].append(f"Failed pa rin sa {clean_group}: {str(ex2)}")
                 except Exception as ex:
                     current_time = datetime.now().strftime("%I:%M:%S %p")
                     err_str = str(ex)
-                    log_text = f"Failed {clean_group}: {err_str} - {current_time}"
-                    live_logs_storage[phone].append(log_text)
+                    live_logs_storage[phone].append(f"Failed {clean_group}: {err_str} - {current_time}")
                     
                     if "AuthKeyUnregistered" in err_str or "Session" in err_str or "Authorization" in err_str:
                         live_logs_storage[phone].append("Na-invalidate ang session.")
@@ -108,10 +115,11 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
                             await asyncio.sleep(10)
                         if active_tasks.get(phone, False):
                             try:
-                                if client.is_connected():
-                                    await client.delete_messages(target_group, [msg_id])
-                                    del_time = datetime.now().strftime("%I:%M:%S %p")
-                                    live_logs_storage[phone].append(f"Auto-deleted message in {target_group} - {del_time}")
+                                if not client.is_connected():
+                                    await client.connect()
+                                await client.delete_messages(target_group, [msg_id])
+                                del_time = datetime.now().strftime("%I:%M:%S %p")
+                                live_logs_storage[phone].append(f"Auto-deleted message in {target_group} - {del_time}")
                             except:
                                 pass
                     
@@ -139,7 +147,7 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
             cycle_count += 1
 
     except Exception as e:
-        live_logs_storage[phone].append(f"Loop Error: {str(e)}")
+        live_logs_storage[phone].append(f"Loop Crash Error: {str(e)}")
     finally:
         try:
             if client.is_connected():
@@ -152,11 +160,9 @@ async def run_autoplug_loop(phone: str, session_str: str, api_id: int, api_hash:
 
 @app.post("/api/start-autoplug")
 async def start_autoplug(data: StartAutoplugRequest, background_tasks: BackgroundTasks):
-    # 1. Suriin ang Keycode
     if data.keycode not in VALID_KEYCODES:
         raise HTTPException(status_code=400, detail="Invalid o expired na ang Client Keycode!")
 
-    # 2. Suriin kung naglagay ng string session ang kliyente
     if not data.string_session.strip():
         raise HTTPException(status_code=400, detail="Kailangan mong ilagay ang iyong Telegram String Session!")
 
