@@ -201,3 +201,32 @@ async def stop_autoplug(data: StopRequest):
         active_tasks[data.phone] = False
         return {"status": "success", "message": "Matagumpay na pinatigil ang autoplug."}
     return {"status": "not_found", "message": "Walang aktibong task."}
+
+# --- ADMIN ENDPOINTS ---
+
+@app.get("/api/admin/active-tasks")
+async def get_active_tasks(admin_key: str):
+    if admin_key not in VALID_KEYCODES:
+        raise HTTPException(status_code=403, detail="Unauthorized Admin Key!")
+    
+    tasks_info = []
+    for phone, is_active in active_tasks.items():
+        if is_active:
+            tasks_info.append({"phone": phone})
+            
+    return {"status": "success", "active_users": tasks_info}
+
+class AdminStopRequest(BaseModel):
+    admin_key: str
+    phone: str
+
+@app.post("/api/admin/stop-user")
+async def admin_stop_user(data: AdminStopRequest):
+    if data.admin_key not in VALID_KEYCODES:
+        raise HTTPException(status_code=403, detail="Unauthorized Admin Key!")
+        
+    if data.phone in active_tasks:
+        active_tasks[data.phone] = False
+        return {"status": "success", "message": f"Matagumpay na pinatigil ang plug ng numerong {data.phone}"}
+    
+    return {"status": "not_found", "message": "Walang nakitang aktibong task para sa numerong ito."}
