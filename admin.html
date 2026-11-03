@@ -23,12 +23,11 @@
             <div id="users-list" class="space-y-3">
                 <!-- Dito papasok ang listahan -->
             </div>
-            <button onclick="loadActiveTasks()" class="mt-4 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm">Refresh List</button>
+            <button onclick="loadActiveTasks()" class="mt-4 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold">Refresh List</button>
         </div>
     </div>
 
     <script>
-        // Nakalagay na ang iyong Render Backend URL dito
         const BACKEND_URL = "https://telegram-autoplugs.onrender.com"; 
 
         async function loadActiveTasks() {
@@ -51,12 +50,14 @@
 
                     data.active_users.forEach(user => {
                         listDiv.innerHTML += `
-                            <div class="flex justify-between items-center p-4 bg-gray-50 rounded-xl border">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-gray-50 rounded-xl border gap-3">
                                 <div>
                                     <p class="font-bold text-gray-800">Phone/ID: ${user.phone}</p>
                                     <span class="text-xs text-green-600 font-semibold">● Tumatakbo</span>
                                 </div>
-                                <button onclick="stopUser('${user.phone}', '${key}')" class="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-bold">Force Stop</button>
+                                <div class="flex gap-2 w-full sm:w-auto">
+                                    <button onclick="stopUser('${user.phone}', '${key}')" class="flex-1 sm:flex-none bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold">Stop</button>
+                                </div>
                             </div>
                         `;
                     });
